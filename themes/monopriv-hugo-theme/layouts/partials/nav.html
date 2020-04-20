@@ -1,6 +1,23 @@
-<nav class="navbar text-center sticky-top bg-white mt-2 mb-5">
-    <a href='{{ .Site.BaseURL }}'><span class="btn btn-sm btn-outline-primary">Home</span></a>
-    <a href='{{ "about" | absURL }}'><span class="btn btn-sm btn-outline-secondary">About</span></a>
-    <a href='{{ "post" | absURL }}'><span class="btn btn-sm btn-outline-success">Blog</span></a>
-    <a href='{{ "tags" | absURL }}'><span class="btn btn-sm btn-outline-warning">Tags</span></a>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="{{ .Site.BaseURL }}">Practical Disregard</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggle" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navbarToggle">
+    <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+      <li class="nav-item active">
+        <a class="nav-link" href="{{ .Site.BaseURL }}"><span class="btn btn-sm btn-outline-primary">Home</span> <span class="sr-only">(current)</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href='{{ "about" | absURL }}'><span class="btn btn-sm btn-outline-secondary">About</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href='{{ "post" | absURL }}'><span class="btn btn-sm btn-outline-success">Blog</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href='{{ "tags" | absURL }}'><span class="btn btn-sm btn-outline-warning">Tags</span></a>
+      </li>
+    </ul>
+  </div>
 </nav>
