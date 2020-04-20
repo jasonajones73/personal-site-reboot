@@ -1,4 +1,4 @@
-baseURL = "https://gohugo.io/"
+baseURL = "https://gracious-keller-e2d271.netlify.app/"
 title = "Practical Disregard"
 languagecode = "en"
 author = "Jason Jones"
@@ -29,7 +29,7 @@ disqus = true
 analytics = false
 
 [params.search] # Site search powered by DuckDuckGo
-enabled = true
+enabled = false
 placeholder="Search"
 
 [params.hero]
