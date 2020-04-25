@@ -1,0 +1,220 @@
+---
+title: "Weather Data"
+author: "Jason Jones"
+date: 2019-05-29T21:13:00-00:00
+output:
+  html_document:
+    code_folding: hide
+    df_print: paged
+editor_options:
+  chunk_output_type: inline
+---
+
+<script src="/rmarkdown-libs/kePrint/kePrint.js"></script>
+
+
+<div id="the-boring-bits" class="section level1">
+<h1>The Boring Bits</h1>
+<pre class="r"><code># Load packages ----
+library(tidyverse)
+library(tigris)
+library(sf)
+library(riem)
+library(kableExtra)</code></pre>
+<p><br></p>
+</div>
+<div id="finding-home" class="section level1">
+<h1>Finding Home</h1>
+<p>Let’s start by grabbing the Chapel Hill boundary and then doing a test plot.</p>
+<pre class="r"><code># Retrieve Chapel Hill boundary ----
+chapel_hill &lt;- places(state = 37, year = 2017) %&gt;%
+  st_as_sf() %&gt;%
+  filter(NAME == &quot;Chapel Hill&quot;)</code></pre>
+<p><br></p>
+<pre class="r"><code>chapel_hill %&gt;%
+  ggplot() +
+  geom_sf(fill = NA, color = &quot;Red&quot;) +
+  theme(panel.background = element_blank())</code></pre>
+<p><img src="/post/2019-05-29-weather-data_files/figure-html/unnamed-chunk-3-1.png" width="960" style="display: block; margin: auto;" /></p>
+<p><br></p>
+</div>
+<div id="weather-stations" class="section level1">
+<h1>Weather Stations</h1>
+<p>Now we need to grab all of the weather stations for NC and do another test plot to make sure everything is working. We should see a nice collection of dots that looks like North Carolina!</p>
+<pre class="r"><code># Retrieve weather stations ----
+stations &lt;- riem_stations(network = &quot;NC_ASOS&quot;) %&gt;%
+  st_as_sf(coords = c(&quot;lon&quot;, &quot;lat&quot;), crs = st_crs(chapel_hill))
+
+stations %&gt;%
+  ggplot() +
+  geom_sf() +
+  theme(panel.background = element_blank())</code></pre>
+<p><img src="/post/2019-05-29-weather-data_files/figure-html/unnamed-chunk-4-1.png" width="960" style="display: block; margin: auto;" /></p>
+<p><br></p>
+</div>
+<div id="subset-chapel-hill" class="section level1">
+<h1>Subset Chapel Hill</h1>
+<p>Getting fancy now! We will do some geoprocessing to select only the weather station(s) that fall within the Chapel Hill boundary we grabbed first. A test plot should confirm that this worked for us.</p>
+<pre class="r"><code># Select station in Chapel Hill ---
+selection &lt;- st_intersection(stations, chapel_hill)
+
+# Confirm location ----
+stations %&gt;%
+  filter(id == &quot;IGX&quot;) %&gt;%
+  ggplot() +
+  geom_sf(data = chapel_hill, fill = NA, color = &quot;Red&quot;) +
+  geom_sf() +
+  theme(panel.background = element_blank())</code></pre>
+<p><img src="/post/2019-05-29-weather-data_files/figure-html/unnamed-chunk-5-1.png" width="960" style="display: block; margin: auto;" /></p>
+<p><br></p>
+</div>
+<div id="retrieve-weather-data" class="section level1">
+<h1>Retrieve Weather Data</h1>
+<p>Now that we know what weather station we want to focus on, we can retrive all of the data for that station.</p>
+<pre class="r"><code># Retrieve weather data for station IGX ----
+weather_dat &lt;- riem_measures(station = &quot;IGX&quot;)</code></pre>
+<p><br></p>
+<p>UH-OH! Data shows that readings stopped in April 2018. A quick Google search revealed that the airport was actually closed in May 2018! Looks like we will need to try something else!</p>
+<p><br></p>
+</div>
+<div id="next-closest-station" class="section level1">
+<h1>Next Closest Station</h1>
+<p>Maybe we can do some more geoprocessing and find the next closest station. Let’s start with that and then check out the results.</p>
+<pre class="r"><code># Compute distances of stations from Chapel Hill center
+stations &lt;- chapel_hill %&gt;%
+  st_centroid() %&gt;%
+  st_distance(stations, by_element = TRUE) %&gt;%
+  as.integer %&gt;%
+  cbind(stations) %&gt;%
+  rename(distance = &quot;.&quot;)
+
+# Check out the results
+stations %&gt;%
+  as_tibble() %&gt;%
+  select(-geometry) %&gt;%
+  top_n(-3, distance) %&gt;%
+  arrange(distance) %&gt;%
+  kable(col.names = c(&quot;Distance&quot;, &quot;Station ID&quot;, &quot;Name&quot;)) %&gt;%
+  kable_styling()</code></pre>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:right;">
+Distance
+</th>
+<th style="text-align:left;">
+Station ID
+</th>
+<th style="text-align:left;">
+Name
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+2384
+</td>
+<td style="text-align:left;">
+IGX
+</td>
+<td style="text-align:left;">
+WILLIAMS_AIRPORT_(ASOS)
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+23351
+</td>
+<td style="text-align:left;">
+RDU
+</td>
+<td style="text-align:left;">
+RALEIGH-DURHAM_(ASOS)
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+38880
+</td>
+<td style="text-align:left;">
+TTA
+</td>
+<td style="text-align:left;">
+SANFORD-LEE_COUNTY_RGNL_AIRPORT
+</td>
+</tr>
+</tbody>
+</table>
+<p><br></p>
+</div>
+<div id="weather-data-one-more-time" class="section level1">
+<h1>Weather Data One More Time</h1>
+<p>Looks like RDU is the next closest weather station to the center of Chapel Hill. Let’s go get the weather data for that station now.</p>
+<pre class="r"><code># Retrieve weather data again ----
+weather_dat &lt;- riem_measures(station = &quot;RDU&quot;)</code></pre>
+<p><br></p>
+<p>Awesome stuff! Now we can play around with the weather data a bit.</p>
+</div>
+<div id="monthly-average-temperature" class="section level1">
+<h1>Monthly Average Temperature</h1>
+<pre class="r"><code>weather_dat %&gt;%
+  filter(is.na(tmpf) != TRUE) %&gt;%
+  mutate(valid = lubridate::floor_date(valid, unit = &quot;month&quot;)) %&gt;%
+  group_by(valid) %&gt;%
+  summarise(avg_temp = mean(tmpf)) %&gt;%
+  ungroup() %&gt;%
+  ggplot(aes(valid, avg_temp)) +
+  geom_line(color = &quot;#112E51&quot;) +
+  geom_point(size = 3, color = &quot;#FF7043&quot;) +
+  labs(x = NULL, y = NULL) +
+  theme(panel.background = element_blank())</code></pre>
+<p><img src="/post/2019-05-29-weather-data_files/figure-html/unnamed-chunk-9-1.png" width="960" style="display: block; margin: auto;" /></p>
+<p><br></p>
+</div>
+<div id="daily-highs-and-lows" class="section level1">
+<h1>Daily Highs and Lows</h1>
+<pre class="r"><code>highs &lt;- weather_dat %&gt;%
+  filter(is.na(tmpf) != TRUE) %&gt;%
+  mutate(valid = lubridate::floor_date(valid, unit = &quot;day&quot;)) %&gt;%
+  group_by(valid) %&gt;%
+  top_n(1, tmpf) %&gt;%
+  summarise(high = mean(tmpf)) %&gt;%
+  ungroup()
+
+lows &lt;- weather_dat %&gt;%
+  filter(is.na(tmpf) != TRUE) %&gt;%
+  mutate(valid = lubridate::floor_date(valid, unit = &quot;day&quot;)) %&gt;%
+  group_by(valid) %&gt;%
+  top_n(-1, tmpf) %&gt;%
+  summarise(low = mean(tmpf)) %&gt;%
+  ungroup()
+
+highs %&gt;%
+  left_join(lows, by = &quot;valid&quot;) %&gt;%
+  gather(&quot;key&quot;, &quot;value&quot;, 2:3) %&gt;%
+  ggplot(aes(valid, value, color = key)) +
+  geom_line() +
+  labs(x = NULL, y = NULL) +
+  scale_color_manual(name = &quot;Categories&quot;, values = c(&quot;#112E51&quot;, &quot;#FF7043&quot;)) +
+  theme(panel.background = element_blank())</code></pre>
+<p><img src="/post/2019-05-29-weather-data_files/figure-html/unnamed-chunk-10-1.png" width="960" style="display: block; margin: auto;" /></p>
+<p><br></p>
+</div>
+<div id="high-and-low-differences-monthly-variance" class="section level1">
+<h1>High and Low Differences, Monthly Variance</h1>
+<pre class="r"><code>highs %&gt;%
+  left_join(lows, by = &quot;valid&quot;) %&gt;%
+  mutate(diff = high - low) %&gt;%
+  mutate(valid = lubridate::floor_date(valid, unit = &quot;month&quot;)) %&gt;%
+  group_by(valid) %&gt;%
+  summarise(variance = var(diff)) %&gt;%
+  ggplot(aes(valid, variance)) +
+  geom_line(color = &quot;#112E51&quot;) +
+  geom_point(size = 3, color = &quot;#FF7043&quot;) +
+  labs(x = NULL, y = NULL) +
+  theme(panel.background = element_blank())</code></pre>
+<p><img src="/post/2019-05-29-weather-data_files/figure-html/unnamed-chunk-11-1.png" width="960" style="display: block; margin: auto;" /></p>
+<p><br>
+<br></p>
+</div>

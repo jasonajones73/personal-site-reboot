@@ -1,0 +1,117 @@
+---
+title: "City of Raleigh Budget Sentiment Analysis"
+author: "Jason Jones"
+date: 2018-04-29T21:09:00-00:00
+categories: ["R"]
+tags: ["R Markdown", "budget", "sentiment"]
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+```
+
+## Package Import
+Load necessary packages and set one global option.
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(pdftools)
+library(tidytext)
+library(knitr)
+library(kableExtra)
+```
+
+## Retrieve File
+Download the file from the City of Raleigh website, read that file in as a character vector, and delete the downloaded file from the directory. 
+
+```{r message=FALSE, warning=FALSE}
+download.file("https://cityofraleigh0drupal.blob.core.usgovcloudapi.net/drupal-prod/COR11/FY2018AdoptedBudget20160612.pdf",
+              "FY2018AdoptedBudget.pdf",
+              mode = "wb")
+
+txt = pdf_text("FY2018AdoptedBudget.pdf")
+
+unlink("FY2018AdoptedBudget.pdf")
+
+```
+
+## Create Data Frame
+Create a page number character vector, create a data frame by binding the page number character vector with the extracted text, and finally "unnest" all of the page text into individual words.
+
+```{r message=FALSE, warning=FALSE}
+page = as.character(1:length(txt))
+
+df = data.frame(cbind(page, txt))
+
+budget_words = df %>%
+  mutate(txt = as.character(txt)) %>%
+  unnest_tokens(word, txt)
+
+```
+
+## Cleaning 
+Remove stop words and save as clean object, join sentiment lexicon with clean object, and group the object by page and sentiments before summarising.
+
+```{r message=FALSE, warning=FALSE}
+cleaned = budget_words %>%
+  anti_join(stop_words)
+
+sentiment = cleaned %>%
+  inner_join(get_sentiments("nrc"))
+
+sent_count = sentiment %>%
+  group_by(page, sentiment) %>%
+  summarise(sent_count = n()) %>%
+  ungroup() %>%
+  mutate(page = as.integer(page))
+
+```
+
+## Visualize
+
+```{r out.width="100%", echo=FALSE}
+sent_count %>%
+  mutate(sentiment = toupper(sentiment)) %>%
+  ggplot(aes(page, sent_count, fill = sentiment)) +
+  geom_col() +
+  labs(x = "Budget Document Page #") +
+  scale_fill_viridis_d("Sentiment") +
+  theme(panel.background = element_blank(),
+        axis.title.y = element_blank(),
+        text = element_text(family = "Roboto"),
+        legend.position = "bottom")
+```
+
+## Negative Word Table
+
+```{r echo=FALSE}
+negative = sentiment %>%
+  filter(sentiment == "negative") %>%
+  group_by(word) %>%
+  summarise(word_count = n()) %>%
+  ungroup() %>%
+  top_n(10, word_count) %>%
+  mutate(word = toupper(word))
+
+kable(negative, col.names = c("Word", "Word Count")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+```
+
+## Trust Word Table
+
+```{r echo=FALSE}
+trust = sentiment %>%
+  filter(sentiment == "trust") %>%
+  group_by(word) %>%
+  summarise(word_count = n()) %>%
+  ungroup() %>%
+  top_n(10, word_count) %>%
+  mutate(word = toupper(word))
+
+kable(trust, col.names = c("Word", "Word Count")) %>%
+  kable_styling(bootstrap_options = c("stripted", "hover"))
+
+```
+

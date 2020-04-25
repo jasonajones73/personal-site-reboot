@@ -1,0 +1,753 @@
+---
+title: "#ELGL19 On Twitter: A Brief Synthesis"
+author: "Jason Jones"
+date: 2019-05-24T21:13:00-00:00
+output:
+  html_document:
+    code_folding: hide
+    df_print: paged
+editor_options:
+  chunk_output_type: inline
+---
+
+<script src="/rmarkdown-libs/kePrint/kePrint.js"></script>
+
+
+<div id="the-boring-bits" class="section level1">
+<h1>The Boring Bits</h1>
+<pre class="r"><code>library(tidyverse)
+library(lubridate)
+library(tidytext)
+library(kableExtra)
+
+tweets &lt;- read_rds(&quot;data/tweets.rds&quot;) %&gt;%
+  as_tibble()
+
+f &lt;- function(time) {
+  x &lt;- time
+  hour(x) &lt;- hour(x)-4
+  return(x)
+}</code></pre>
+<p><br></p>
+</div>
+<div id="hours-of-tweets" class="section level1">
+<h1>24 Hours of Tweets</h1>
+<pre class="r"><code>tweets %&gt;%
+  filter(is_retweet == FALSE) %&gt;%
+  mutate(created_at = floor_date(created_at, unit = &quot;hour&quot;)) %&gt;%
+  mutate(created_at = f(created_at)) %&gt;%
+  group_by(created_at) %&gt;%
+  summarise(tweet_count = n()) %&gt;%
+  ungroup() %&gt;%
+  arrange(created_at) %&gt;%
+  mutate(running_total = cumsum(tweet_count)) %&gt;%
+  top_n(24, running_total) %&gt;%
+  ggplot(aes(created_at, running_total)) +
+  geom_col(fill = &quot;#112E51&quot;) +
+  geom_label(aes(label = scales::comma(running_total)), nudge_y = -50, size = 2) +
+  scale_y_continuous(labels = scales::comma_format()) +
+  labs(title = &quot;New Tweets: #ELGL19&quot;,
+       caption = &quot;Author: Jason Jones, @packpridejones&quot;,
+       x = NULL, y = NULL) +
+  theme(panel.background = element_blank(),
+        panel.grid.major.y = element_line(color = &quot;light grey&quot;))</code></pre>
+<p><img src="/post/2019-05-24-elgl-twitter_files/figure-html/unnamed-chunk-2-1.png" width="960" style="display: block; margin: auto;" /></p>
+<p><br></p>
+</div>
+<div id="retweets-are-tweets-too" class="section level1">
+<h1>Retweets Are Tweets Too</h1>
+<pre class="r"><code>tweets %&gt;%
+  filter(is_retweet == TRUE) %&gt;%
+  mutate(created_at = floor_date(created_at, unit = &quot;hour&quot;)) %&gt;%
+  mutate(created_at = f(created_at)) %&gt;%
+  group_by(created_at) %&gt;%
+  summarise(tweet_count = n()) %&gt;%
+  ungroup() %&gt;%
+  arrange(created_at) %&gt;%
+  mutate(running_total = cumsum(tweet_count)) %&gt;%
+  top_n(24, running_total) %&gt;%
+  ggplot(aes(created_at, running_total)) +
+  geom_col(fill = &quot;#FF7043&quot;) +
+  geom_label(aes(label = scales::comma(running_total)), nudge_y = -50, size = 2) +
+  scale_y_continuous(labels = scales::comma_format()) +
+  labs(title = &quot;Retweets: #ELGL19&quot;,
+       caption = &quot;Author: Jason Jones, @packpridejones&quot;,
+       x = NULL, y = NULL) +
+  theme(panel.background = element_blank(),
+        panel.grid.major.y = element_line(color = &quot;light grey&quot;))</code></pre>
+<p><img src="/post/2019-05-24-elgl-twitter_files/figure-html/unnamed-chunk-3-1.png" width="960" style="display: block; margin: auto;" /></p>
+<p><br></p>
+</div>
+<div id="biggest-fans" class="section level1">
+<h1>Biggest Fans</h1>
+<div id="most-original-tweets" class="section level2">
+<h2>Most Original Tweets</h2>
+<pre class="r"><code>tweets %&gt;%
+  filter(is_retweet == FALSE) %&gt;%
+  group_by(screen_name) %&gt;%
+  summarise(tweets = n()) %&gt;%
+  arrange(desc(tweets)) %&gt;%
+  top_n(10, tweets) %&gt;%
+  kable(col.names = c(&quot;Twitter ID&quot;, &quot;Tweet Count&quot;)) %&gt;%
+  kable_styling()</code></pre>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Twitter ID
+</th>
+<th style="text-align:right;">
+Tweet Count
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+kwyatt23
+</td>
+<td style="text-align:right;">
+134
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+kowyatt
+</td>
+<td style="text-align:right;">
+97
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+TheBaconDiaries
+</td>
+<td style="text-align:right;">
+76
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+acornsandnuts
+</td>
+<td style="text-align:right;">
+54
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+RealMaggieJones
+</td>
+<td style="text-align:right;">
+54
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+benkittelson56
+</td>
+<td style="text-align:right;">
+41
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+JBStephens1
+</td>
+<td style="text-align:right;">
+37
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Josh_Edwards11
+</td>
+<td style="text-align:right;">
+35
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+kimstric
+</td>
+<td style="text-align:right;">
+34
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+77ccampbell
+</td>
+<td style="text-align:right;">
+32
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+BarkmanSusan
+</td>
+<td style="text-align:right;">
+32
+</td>
+</tr>
+</tbody>
+</table>
+<p><br></p>
+</div>
+</div>
+<div id="cheering-section" class="section level1">
+<h1>Cheering Section</h1>
+<div id="most-retweets" class="section level2">
+<h2>Most Retweets</h2>
+<pre class="r"><code>tweets %&gt;%
+  filter(is_retweet == TRUE) %&gt;%
+  group_by(screen_name) %&gt;%
+  summarise(tweets = n()) %&gt;%
+  arrange(desc(tweets)) %&gt;%
+  top_n(10, tweets) %&gt;%
+  kable(col.names = c(&quot;Twitter ID&quot;, &quot;Retweet Count&quot;)) %&gt;%
+  kable_styling()</code></pre>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Twitter ID
+</th>
+<th style="text-align:right;">
+Retweet Count
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+ELGL50
+</td>
+<td style="text-align:right;">
+243
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+SEELGL
+</td>
+<td style="text-align:right;">
+125
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+77ccampbell
+</td>
+<td style="text-align:right;">
+75
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MountainELGL
+</td>
+<td style="text-align:right;">
+67
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+NWELGL
+</td>
+<td style="text-align:right;">
+58
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+kowyatt
+</td>
+<td style="text-align:right;">
+56
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+danwein
+</td>
+<td style="text-align:right;">
+51
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+acornsandnuts
+</td>
+<td style="text-align:right;">
+45
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CALELGL
+</td>
+<td style="text-align:right;">
+38
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+SWELGL
+</td>
+<td style="text-align:right;">
+37
+</td>
+</tr>
+</tbody>
+</table>
+<p><br></p>
+</div>
+</div>
+<div id="enough-already" class="section level1">
+<h1>Enough Already!</h1>
+<div id="top-average-tweet-length" class="section level2">
+<h2>Top Average Tweet Length</h2>
+<pre class="r"><code>tweets %&gt;%
+  filter(is_retweet == FALSE) %&gt;%
+  group_by(screen_name) %&gt;%
+  summarise(avg_length = mean(display_text_width)) %&gt;%
+  top_n(15, avg_length) %&gt;%
+  ggplot(aes(reorder(screen_name, avg_length), avg_length)) +
+  geom_col(fill = &quot;#0095A8&quot;) +
+  coord_flip() +
+  labs(title = &quot;Average Tweet Length&quot;,
+       subtitle = &quot;Top 15&quot;,
+       caption = &quot;Author: Jason Jones, @packpridejones&quot;,
+       x = NULL, y = NULL) +
+  theme(panel.background = element_blank(),
+        panel.grid.major.x = element_line(color = &quot;light grey&quot;))</code></pre>
+<p><img src="/post/2019-05-24-elgl-twitter_files/figure-html/unnamed-chunk-6-1.png" width="960" style="display: block; margin: auto;" /></p>
+<p><br></p>
+</div>
+<div id="short-and-sweet" class="section level2">
+<h2>Short and Sweet</h2>
+<pre class="r"><code>tweets %&gt;%
+  filter(is_retweet == FALSE) %&gt;%
+  group_by(screen_name) %&gt;%
+  summarise(avg_length = mean(display_text_width)) %&gt;%
+  top_n(-15, avg_length) %&gt;%
+  ggplot(aes(reorder(screen_name, desc(avg_length)), avg_length)) +
+  geom_col(fill = &quot;#0095A8&quot;) +
+  coord_flip() +
+  labs(title = &quot;Average Tweet Length&quot;,
+       subtitle = &quot;Lowest 15&quot;,
+       caption = &quot;Author: Jason Jones, @packpridejones&quot;,
+       x = NULL, y = NULL) +
+  theme(panel.background = element_blank(),
+        panel.grid.major.x = element_line(color = &quot;light grey&quot;))</code></pre>
+<p><img src="/post/2019-05-24-elgl-twitter_files/figure-html/unnamed-chunk-7-1.png" width="960" style="display: block; margin: auto;" /></p>
+<p><br></p>
+</div>
+</div>
+<div id="popular-kids" class="section level1">
+<h1>Popular Kids</h1>
+<div id="who-gets-the-most-replies" class="section level2">
+<h2>Who gets the most replies?</h2>
+<pre class="r"><code>tweets %&gt;%
+  filter(is.na(reply_to_screen_name) != TRUE) %&gt;%
+  group_by(reply_to_screen_name) %&gt;%
+  summarise(tweets = n()) %&gt;%
+  arrange(desc(tweets)) %&gt;%
+  top_n(10, tweets) %&gt;%
+  kable(col.names = c(&quot;Twitter ID&quot;, &quot;Reply Count&quot;)) %&gt;%
+  kable_styling()</code></pre>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Twitter ID
+</th>
+<th style="text-align:right;">
+Reply Count
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+kwyatt23
+</td>
+<td style="text-align:right;">
+21
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Josh_Edwards11
+</td>
+<td style="text-align:right;">
+18
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+acornsandnuts
+</td>
+<td style="text-align:right;">
+17
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+TheBaconDiaries
+</td>
+<td style="text-align:right;">
+13
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+BarkmanSusan
+</td>
+<td style="text-align:right;">
+12
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+kowyatt
+</td>
+<td style="text-align:right;">
+11
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+novalsi
+</td>
+<td style="text-align:right;">
+8
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+marcemars
+</td>
+<td style="text-align:right;">
+7
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+benkittelson56
+</td>
+<td style="text-align:right;">
+6
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+ELGL50
+</td>
+<td style="text-align:right;">
+6
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+hanaschank
+</td>
+<td style="text-align:right;">
+6
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+libraryhillary
+</td>
+<td style="text-align:right;">
+6
+</td>
+</tr>
+</tbody>
+</table>
+<p><br></p>
+</div>
+</div>
+<div id="iphone-or-android" class="section level1">
+<h1>iPhone or Android?</h1>
+<div id="twitter-tool-of-choice" class="section level2">
+<h2>Twitter tool of choice</h2>
+<pre class="r"><code>tweets %&gt;%
+  filter(is_retweet == FALSE) %&gt;%
+  group_by(source) %&gt;%
+  summarise(Count = n()) %&gt;%
+  arrange(desc(Count)) %&gt;%
+  top_n(10, Count) %&gt;%
+  kable() %&gt;%
+  kable_styling()</code></pre>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+source
+</th>
+<th style="text-align:right;">
+Count
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Twitter for iPhone
+</td>
+<td style="text-align:right;">
+866
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Twitter for Android
+</td>
+<td style="text-align:right;">
+353
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Twitter Web Client
+</td>
+<td style="text-align:right;">
+99
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Twitter Web App
+</td>
+<td style="text-align:right;">
+71
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Twitter for iPad
+</td>
+<td style="text-align:right;">
+12
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Instagram
+</td>
+<td style="text-align:right;">
+7
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+HubSpot
+</td>
+<td style="text-align:right;">
+4
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+IFTTT
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+LinkedIn
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Sprout Social
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+</tbody>
+</table>
+<p><br></p>
+</div>
+</div>
+<div id="stealing-thunder" class="section level1">
+<h1>Stealing Thunder?</h1>
+<div id="retweet-has-more-favorites-than-original-tweet" class="section level2">
+<h2>Retweet has more favorites than original tweet</h2>
+<pre class="r"><code>tweets %&gt;%
+  filter(favorite_count &lt; retweet_favorite_count) %&gt;%
+  group_by(screen_name) %&gt;%
+  summarise(thunder_stolen = n()) %&gt;%
+  arrange(desc(thunder_stolen)) %&gt;%
+  top_n(10, thunder_stolen) %&gt;%
+  kable(col.names = c(&quot;Screen Name&quot;, &quot;Count Of Thunder Steals&quot;)) %&gt;%
+  kable_styling()</code></pre>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Screen Name
+</th>
+<th style="text-align:right;">
+Count Of Thunder Steals
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+ELGL50
+</td>
+<td style="text-align:right;">
+238
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+SEELGL
+</td>
+<td style="text-align:right;">
+121
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+77ccampbell
+</td>
+<td style="text-align:right;">
+75
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MountainELGL
+</td>
+<td style="text-align:right;">
+65
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+NWELGL
+</td>
+<td style="text-align:right;">
+57
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+kowyatt
+</td>
+<td style="text-align:right;">
+56
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+danwein
+</td>
+<td style="text-align:right;">
+51
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+acornsandnuts
+</td>
+<td style="text-align:right;">
+45
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CALELGL
+</td>
+<td style="text-align:right;">
+37
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MidwestELGL
+</td>
+<td style="text-align:right;">
+36
+</td>
+</tr>
+</tbody>
+</table>
+<p><br></p>
+</div>
+</div>
+<div id="language-is-important" class="section level1">
+<h1>Language Is Important</h1>
+<div id="scoring-tweets-by-language-sentiment" class="section level2">
+<h2>Scoring Tweets by Language Sentiment</h2>
+<pre class="r"><code>tweets %&gt;%
+  filter(created_at &gt; as.POSIXct(&quot;2019-05-15 23:59:59&quot;)) %&gt;%
+  mutate(index = row_number()) %&gt;%
+  unnest_tokens(&quot;word&quot;, text) %&gt;%
+  select(index, created_at, screen_name, word) %&gt;%
+  anti_join(stop_words) %&gt;%
+  mutate(created_at = floor_date(created_at, unit = &quot;hour&quot;)) %&gt;%
+  mutate(created_at = f(created_at)) %&gt;%
+  inner_join(get_sentiments(lexicon = &quot;afinn&quot;)) %&gt;%
+  group_by(created_at) %&gt;%
+  summarise(score = sum(value)) %&gt;%
+  ungroup() %&gt;%
+  arrange(created_at) %&gt;%
+  mutate(sent_flow = cumsum(score)) %&gt;%
+  ggplot(aes(created_at, sent_flow)) +
+  geom_line() +
+  geom_point(color = &quot;#FF7043&quot;, size = 3) +
+  scale_y_continuous(labels = scales::comma_format()) +
+  labs(title = &quot;#ELGL19: Twitter Cumulative Sentiment&quot;,
+       subtitle = &quot;Y&#39;all Some Positive People!&quot;,
+       caption = &quot;Author: Jason Jones, @packpridejones&quot;,
+       x = NULL, y = NULL) +
+  theme(panel.background = element_blank(),
+        panel.grid.major.y = element_line(color = &quot;light grey&quot;))</code></pre>
+<p><img src="/post/2019-05-24-elgl-twitter_files/figure-html/unnamed-chunk-11-1.png" width="960" style="display: block; margin: auto;" /></p>
+<p><br></p>
+</div>
+<div id="most-used-words" class="section level2">
+<h2>Most Used Words</h2>
+<pre class="r"><code>sentiment &lt;- tweets %&gt;%
+  filter(created_at &gt; as.POSIXct(&quot;2019-05-15 23:59:59&quot;)) %&gt;%
+  mutate(index = row_number()) %&gt;%
+  unnest_tokens(&quot;word&quot;, text) %&gt;%
+  select(index, created_at, screen_name, word) %&gt;%
+  anti_join(stop_words) %&gt;%
+  mutate(created_at = floor_date(created_at, unit = &quot;hour&quot;)) %&gt;%
+  mutate(created_at = f(created_at)) %&gt;%
+  inner_join(get_sentiments(lexicon = &quot;bing&quot;)) %&gt;%
+  group_by(word) %&gt;%
+  summarise(word_count = n()) %&gt;%
+  ungroup()
+
+wordcloud::wordcloud(sentiment$word, sentiment$word_count, colors = c(&quot;#0095A8&quot;,
+                                                                      &quot;#112E51&quot;,
+                                                                      &quot;#FF7043&quot;))</code></pre>
+<p><img src="/post/2019-05-24-elgl-twitter_files/figure-html/unnamed-chunk-12-1.png" width="960" style="display: block; margin: auto;" /></p>
+<p><br></p>
+</div>
+</div>
+<div id="want-to-play-with-the-data-too" class="section level1">
+<h1>Want To Play With The Data Too?</h1>
+<ul>
+<li><a href="https://raw.githubusercontent.com/jasonajones73/elgl19-twitter/master/data/tweets.csv">Tweet Data CSV</a></li>
+<li><a href="https://raw.githubusercontent.com/jasonajones73/elgl19-twitter/master/data/tweets.json">Tweet Data JSON</a></li>
+<li><a href="https://github.com/jasonajones73/elgl19-twitter/blob/master/data/tweets.rds?raw=true">Tweet Data RDS</a></li>
+</ul>
+<p><br>
+<br></p>
+</div>
