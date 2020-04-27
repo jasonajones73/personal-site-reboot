@@ -2,22 +2,22 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Categories on Practical Disregard</title>
-    <link>/categories/</link>
+    <link>https://jasonajones.netlify.app/categories/</link>
     <description>Recent content in Categories on Practical Disregard</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <copyright>Copyright © 2008–2020</copyright>
     <lastBuildDate>Sun, 29 Apr 2018 21:09:00 +0000</lastBuildDate>
     
-	<atom:link href="/categories/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://jasonajones.netlify.app/categories/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>R</title>
-      <link>/categories/r/</link>
+      <link>https://jasonajones.netlify.app/categories/r/</link>
       <pubDate>Sun, 29 Apr 2018 21:09:00 +0000</pubDate>
       
-      <guid>/categories/r/</guid>
+      <guid>https://jasonajones.netlify.app/categories/r/</guid>
       <description></description>
     </item>
     
