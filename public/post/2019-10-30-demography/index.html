@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+	<meta charset="utf-8">
+	<meta name="description" content='A simple privacy oriented bootstrap hugo blog'>
+	
+		
+		<meta name="keywords" content=''>
+	
+	
+	
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="generator" content="Hugo 0.69.0" />
+	<link href="https://stackpath.bootstrapcdn.com/bootswatch/4.4.1/sketchy/bootstrap.min.css" rel="stylesheet" integrity="sha384-2kOE+STGAkgemIkUbGtoZ8dJLqfvJ/xzRnimSkQN7viOfwRvWseF7lqcuNXmjwrL" crossorigin="anonymous">
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css">
+	<title>Population Change</title>
+</head>
+<body>
+      <div id="content"><div class="container-fluid">
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="/">Practical Disregard</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggle" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navbarToggle">
+    <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+      <li class="nav-item active">
+        <a class="nav-link" href="/"><span class="btn btn-primary">Home</span> <span class="sr-only">(current)</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href='/post'><span class="btn btn-success">Blog</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href='/tags'><span class="btn btn-warning">Tags</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href='/about'><span class="btn btn-info">About</span></a>
+      </li>
+    </ul>
+  </div>
+</nav>
+</div>
+<br>
+<br>
+
+
+	<section class="container text-justified mt-3">
+	  <h2 class="font-weight-bold">Population Change</h2>
+	  <small class="text-secondary mb-5">Posted on October 30, 2019 | 11 minute read</small>
+	  <div class="text-monospace mt-2">
+		  
+
+
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<p>This is the first of what I hope to be a series of demographic explorations inspired by a recent presentation from <a href="https://www.kenan-flagler.unc.edu/faculty/directory/james-johnson-jr/">Dr. James Johnson Jr.</a>. I had the pleasure of listening to him speak at a recent LGFCU Fellows Program alumni workshop. I’ve always been extremely interested in general demography and Dr. Johnson’s presentation inspired me to take a deeper dive into some of the topics he touched on. Dr. Johnson said that there are a lot of things we can debate but general demography is not one of them. I will hope that holds true!</p>
+<p>First up is population change. I will start at the national level with change in raw population, work my way down to counties in North Carolina, and then finally take a look at Census Tracts in the county that I currently work for.</p>
+<p>I will be using the Census Bureau’s <a href="https://www.census.gov/programs-surveys/acs">American Community Survey</a> five year estimates and pulling down data for B01001_001 - Total Population.</p>
+</div>
+<div id="load-packages" class="section level1">
+<h1>Load Packages</h1>
+<p>I am starting out by loading all of the packages that I plan on using. I do always like to mention that if you see something like this - <code>scales::comma_format()</code> - it just means that I am referencing a single function in a package instead of loading it completely. I believe the only package I am working with that way here is the <code>scales</code> package.</p>
+<pre class="r"><code>library(tidyverse)
+library(tidycensus)
+library(extrafont)
+library(tigris)
+library(usmap)
+library(sf)</code></pre>
+<p>I am jumping right in to using the <code>tidycensus</code> package here but know that there is some work you need to do on the front end to be able to use it this way. You can read more about that on the <a href="https://walkerke.github.io/tidycensus/"><code>tidycensus</code> documentation site</a>.</p>
+</div>
+<div id="universal-plot-options" class="section level1">
+<h1>Universal Plot Options</h1>
+<p>Here I am setting some universal plot options for all of my plots to just get that out of the way. This eliminates the need to repetitively call this every time a create a plot. Which will be a lot!</p>
+<pre class="r"><code>theme_set(theme_minimal() +
+            theme(text = element_text(family = &quot;Roboto&quot;),
+                  panel.grid.major = element_line(linetype = &quot;dotted&quot;)))</code></pre>
+</div>
+<div id="load-api-key" class="section level1">
+<h1>Load API Key</h1>
+<p>Now I’m loading my Census Bureau API Key from the environment variable that I’ve stored it in so I don’t have to directly share it with all of you nosey neighbors. Again, check out the documentation for the <code>tidycensus</code> package to learn more about this and request your own API Key from the Census Bureau <a href="https://api.census.gov/data/key_signup.html">here</a>.</p>
+<pre class="r"><code>source(&quot;api_key/api_key.R&quot;)</code></pre>
+<p>Now that we have all that out of the way - let’s get down to business!</p>
+</div>
+<div id="usa-population-change" class="section level1">
+<h1>USA Population Change</h1>
+<p>The first thing you will see me do here is to create a numerical vector of years from 2010 to 2017 and store it in an object named <code>years</code>.</p>
+<p>Why I am doing this will hopefully make sense in the next two steps.</p>
+<pre class="r"><code>years &lt;- 2010:2017</code></pre>
+<p>Now, I will take my <code>years</code> object and have a little fun with the magic of the <code>purrr</code> package.</p>
+<p>I am mapping my call to <code>get_acs</code> to each of the ACS years that I’m interested in. The ever so wonderful <code>map_df</code> will piece my result together as a <code>data.frame</code>.</p>
+<pre class="r"><code>country_population &lt;- map_df(.x = years,
+                             .f = ~get_acs(geography = &quot;state&quot;, variables = &quot;B01001_001&quot;,
+                                           year = ., survey = &quot;acs5&quot;, key = api_key))</code></pre>
+<p>The only thing that’s missing here is keeping track of my survey years. No worries though, <code>purrr</code> to the rescue once again. Here I am using the <code>map</code> function to apply <code>rep_len()</code> to each year in my <code>years</code> object, using <code>flatten_chr()</code> to format properly, creating a <code>tibble</code>, and then finally binding that with my <code>country_population</code> object.</p>
+<p>There may be an easier way to do this but it is what makes sense to me!</p>
+<pre class="r"><code>country_population_updated &lt;- map(.x = years,
+                                  .f = ~rep_len(., 52)) %&gt;%
+  flatten_chr() %&gt;%
+  tibble(survey_year = .) %&gt;%
+  cbind(country_population)</code></pre>
+<p>To be able to look at the change in a state’s percent share of the total population of the United States, I need to compute that total for each survey year and store it in a separate object. I will be using this object in subsequent steps to compute a percent share of population for each state in each survey year.</p>
+<pre class="r"><code>country_totals &lt;- country_population_updated %&gt;%
+  group_by(survey_year) %&gt;%
+  summarise(usa_total = sum(estimate)) %&gt;%
+  ungroup()</code></pre>
+<p>BOOM! Now I can create a final object for plotting by joining my <code>country_total</code> object with my <code>country_population_updated</code> object. As I already said, I will then compute the percent share of population for each state in each survey year.</p>
+<pre class="r"><code>country_pop_shares &lt;- country_population_updated %&gt;%
+  left_join(country_totals) %&gt;%
+  mutate(pct_share = estimate/usa_total)</code></pre>
+<p>I want to stop here for a second and say that I won’t go through explaining this workflow for subsequent examples. I will try to be sure to draw attention to things that are different, but for the most part, each level I go down will have the same workflow that you see here.</p>
+<p>Enough already! Let’s get down to some plotting</p>
+<div id="raw-population-change---usa" class="section level2">
+<h2>Raw Population Change - USA</h2>
+<p>This is just straight forward raw population change from 2010 to 2017.</p>
+<pre class="r"><code>country_pop_shares %&gt;%
+  select(GEOID, NAME, survey_year, estimate) %&gt;%
+  spread(key = survey_year, value = estimate) %&gt;%
+  mutate(change = `2017` - `2010`) %&gt;%
+  ggplot(aes(reorder(NAME, change), change)) +
+  geom_col() +
+  geom_col(aes(fill = change)) +
+  coord_flip() +
+  scale_y_continuous(labels = scales::comma_format()) +
+  scale_fill_distiller(&quot;Raw Change&quot;, type = &quot;div&quot;, palette = &quot;Spectral&quot;, 
+                       direction = 1, labels = scales::comma_format()) +
+            labs(x = NULL,
+                 y = NULL,
+                 caption = &quot;\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates&quot;)</code></pre>
+<p><img src="/post/2019-10-30-demography_files/figure-html/unnamed-chunk-9-1.png" width="80%" /></p>
+</div>
+<div id="percent-share-population-change---usa" class="section level2">
+<h2>Percent Share Population Change - USA</h2>
+<p>I think this is a bit more useful. We can see, in the context of total US population, which states had a significant change in their share of that population between 2010 and 2017. Some interesting things here including North Carolina making it close to the top of the list. Definitely something to pay attention to as Dr. James Johnson pointed out!</p>
+<pre class="r"><code>country_pop_shares %&gt;%
+  select(GEOID, NAME, survey_year, pct_share) %&gt;%
+  spread(key = survey_year, value = pct_share) %&gt;%
+  mutate(change = `2017` - `2010`) %&gt;%
+  ggplot(aes(reorder(NAME, change), change)) +
+  geom_col(aes(fill = change)) +
+  coord_flip() +
+  scale_y_continuous(labels = scales::percent_format()) +
+  scale_fill_distiller(&quot;Change in Share&quot;, type = &quot;div&quot;, palette = &quot;Spectral&quot;, 
+                       direction = 1, labels = scales::percent_format()) +
+            labs(x = NULL,
+                 y = NULL,
+                 caption = &quot;\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates&quot;)</code></pre>
+<p><img src="/post/2019-10-30-demography_files/figure-html/unnamed-chunk-10-1.png" width="80%" /></p>
+<p>Can we take that same data and get a little spatial with it?</p>
+<p>Of course we can! Raw change first…</p>
+<pre class="r"><code>for_map &lt;- country_pop_shares %&gt;%
+  select(GEOID, NAME, survey_year, estimate) %&gt;%
+  spread(key = survey_year, value = estimate) %&gt;%
+  mutate(change = `2017` - `2010`) %&gt;%
+  rename(fips = GEOID, state = NAME)
+
+plot_usmap(data = for_map, values = &quot;change&quot;, color = &quot;white&quot;) +
+  scale_fill_distiller(&quot;Raw Change&quot;, type = &quot;div&quot;, palette = &quot;Spectral&quot;,
+                       direction = 1, labels = scales::comma_format()) +
+  theme(legend.position = &quot;right&quot;) +
+            labs(x = NULL,
+                 y = NULL,
+                 caption = &quot;\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates&quot;)</code></pre>
+<p><img src="/post/2019-10-30-demography_files/figure-html/unnamed-chunk-11-1.png" width="80%" /></p>
+<p>…and now change in share.</p>
+<pre class="r"><code>for_map &lt;- country_pop_shares %&gt;%
+  select(GEOID, NAME, survey_year, pct_share) %&gt;%
+  spread(key = survey_year, value = pct_share) %&gt;%
+  mutate(change = `2017` - `2010`) %&gt;%
+  rename(fips = GEOID, state = NAME)
+
+plot_usmap(data = for_map, values = &quot;change&quot;, color = &quot;white&quot;) +
+  scale_fill_distiller(&quot;Change in Share&quot;, type = &quot;div&quot;, palette = &quot;Spectral&quot;,
+                       direction = 1, labels = scales::percent_format()) +
+  theme(legend.position = &quot;right&quot;) +
+            labs(x = NULL,
+                 y = NULL,
+                 caption = &quot;\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates&quot;)</code></pre>
+<p><img src="/post/2019-10-30-demography_files/figure-html/unnamed-chunk-12-1.png" width="80%" /></p>
+<p>Beautiful!</p>
+</div>
+</div>
+<div id="nc-counties" class="section level1">
+<h1>NC Counties</h1>
+<p>You will notice a different step here. I am using the <code>tigris</code> package to create a <code>sf</code> object of counties in North Carolina. I created the last to plots with the <code>usmap</code> package but moving forward I will be using my own <code>sf</code> objects to merge and plot.</p>
+<pre class="r"><code>nc_counties_sf &lt;- counties(state = 37) %&gt;%
+  st_as_sf()</code></pre>
+<p>Retrieving population again.</p>
+<pre class="r"><code>population &lt;- map_df(.x = years,
+                     .f = ~get_acs(geography = &quot;county&quot;, variables = &quot;B01001_001&quot;,
+                                  year = ., state = 37, survey = &quot;acs5&quot;, key = api_key))</code></pre>
+<p>Adding survey year again.</p>
+<pre class="r"><code>population_updated &lt;- map(.x = years,
+    .f = ~rep_len(., 100)) %&gt;%
+  flatten_chr() %&gt;%
+  tibble(survey_year = .) %&gt;%
+  cbind(population)</code></pre>
+<p>Computing totals again.</p>
+<pre class="r"><code>nc_totals &lt;- population_updated %&gt;%
+  group_by(survey_year) %&gt;%
+  summarise(state_total = sum(estimate)) %&gt;%
+  ungroup()</code></pre>
+<p>Computing population shares again.</p>
+<pre class="r"><code>pop_shares &lt;- population_updated %&gt;%
+  left_join(nc_totals) %&gt;%
+  mutate(pct_share = estimate/state_total)</code></pre>
+<p>Time to plot again!</p>
+<pre class="r"><code>pop_shares %&gt;%
+  select(GEOID, NAME, survey_year, estimate) %&gt;%
+  spread(key = survey_year, value = estimate) %&gt;%
+  mutate(change = `2017` - `2010`) %&gt;%
+  mutate(NAME = str_remove(NAME, &quot;County, North Carolina&quot;)) %&gt;%
+  ggplot(aes(reorder(NAME, change), change)) +
+  geom_col(aes(fill = change)) +
+  coord_flip() +
+  scale_y_continuous(labels = scales::comma_format()) +
+  scale_fill_distiller(&quot;Raw Change&quot;, type = &quot;div&quot;, palette = &quot;Spectral&quot;, 
+                       direction = 1, labels = scales::comma_format()) +
+            labs(x = NULL,
+                 y = NULL,
+                 caption = &quot;\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates&quot;)</code></pre>
+<p><img src="/post/2019-10-30-demography_files/figure-html/unnamed-chunk-18-1.png" width="80%" /></p>
+<p>Whoa! That is a lot to digest in one plot. 100 counties makes for a lot of information. How about we just plot the top 10 and bottom 10 separately?</p>
+<p>Here we go…First the top 10…</p>
+<pre class="r"><code>pop_shares %&gt;%
+  select(GEOID, NAME, survey_year, estimate) %&gt;%
+  spread(key = survey_year, value = estimate) %&gt;%
+  mutate(change = `2017` - `2010`) %&gt;%
+  mutate(NAME = str_remove(NAME, &quot;County, North Carolina&quot;)) %&gt;%
+  top_n(10, change) %&gt;%
+  ggplot(aes(reorder(NAME, change), change)) +
+  geom_col(fill = &quot;#3288bd&quot;) +
+  coord_flip() +
+  scale_y_continuous(labels = scales::comma_format()) +
+            labs(x = NULL,
+                 y = NULL,
+                 caption = &quot;\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates&quot;)</code></pre>
+<p><img src="/post/2019-10-30-demography_files/figure-html/unnamed-chunk-19-1.png" width="80%" /></p>
+<p>Now the bottom 10…</p>
+<pre class="r"><code>pop_shares %&gt;%
+  select(GEOID, NAME, survey_year, estimate) %&gt;%
+  spread(key = survey_year, value = estimate) %&gt;%
+  mutate(change = `2017` - `2010`) %&gt;%
+  mutate(NAME = str_remove(NAME, &quot;County, North Carolina&quot;)) %&gt;%
+  top_n(-10, change) %&gt;%
+  ggplot(aes(reorder(NAME, change), change)) +
+  geom_col(fill = &quot;#9e0142&quot;) +
+  coord_flip() +
+  scale_y_continuous(labels = scales::comma_format()) +
+            labs(x = NULL,
+                 y = NULL,
+                 caption = &quot;\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates&quot;)</code></pre>
+<p><img src="/post/2019-10-30-demography_files/figure-html/unnamed-chunk-20-1.png" width="80%" /></p>
+<p>On to change in percent share of population for NC counties…</p>
+<pre class="r"><code>pop_shares %&gt;%
+  select(GEOID, NAME, survey_year, pct_share) %&gt;%
+  spread(key = survey_year, value = pct_share) %&gt;%
+  mutate(change = `2017` - `2010`) %&gt;%
+  mutate(NAME = str_remove(NAME, &quot;County, North Carolina&quot;)) %&gt;%
+  ggplot(aes(reorder(NAME, change), change)) +
+  geom_col(aes(fill = change)) +
+  coord_flip() +
+  scale_y_continuous(labels = scales::percent_format()) +
+  scale_fill_distiller(&quot;Change in Share&quot;, type = &quot;div&quot;, palette = &quot;Spectral&quot;, 
+                       direction = 1, labels = scales::percent_format()) +
+            labs(x = NULL,
+                 y = NULL,
+                 caption = &quot;\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates&quot;)</code></pre>
+<p><img src="/post/2019-10-30-demography_files/figure-html/unnamed-chunk-21-1.png" width="80%" /></p>
+<p>Once again, that is a lot to digest. I do like this visual though because you can quickly see that substantial population growth was limited.</p>
+<p>Let’s do top and bottom 10 again.</p>
+<p>Top 10 first…</p>
+<pre class="r"><code>pop_shares %&gt;%
+  select(GEOID, NAME, survey_year, pct_share) %&gt;%
+  spread(key = survey_year, value = pct_share) %&gt;%
+  mutate(change = `2017` - `2010`) %&gt;%
+  mutate(NAME = str_remove(NAME, &quot;County, North Carolina&quot;)) %&gt;%
+  top_n(10, change) %&gt;%
+  ggplot(aes(reorder(NAME, change), change)) +
+  geom_col(fill = &quot;#3288bd&quot;) +
+  coord_flip() +
+  scale_y_continuous(labels = scales::percent_format()) +
+            labs(x = NULL,
+                 y = NULL,
+                 caption = &quot;\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates&quot;)</code></pre>
+<p><img src="/post/2019-10-30-demography_files/figure-html/unnamed-chunk-22-1.png" width="80%" /></p>
+<p>And now bottom 10 again…</p>
+<pre class="r"><code>pop_shares %&gt;%
+  select(GEOID, NAME, survey_year, pct_share) %&gt;%
+  spread(key = survey_year, value = pct_share) %&gt;%
+  mutate(change = `2017` - `2010`) %&gt;%
+  mutate(NAME = str_remove(NAME, &quot;County, North Carolina&quot;)) %&gt;%
+  top_n(-10, change) %&gt;%
+  ggplot(aes(reorder(NAME, change), change)) +
+  geom_col(fill = &quot;#9e0142&quot;) +
+  coord_flip() +
+  scale_y_continuous(labels = scales::percent_format()) +
+            labs(x = NULL,
+                 y = NULL,
+                 caption = &quot;\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates&quot;)</code></pre>
+<p><img src="/post/2019-10-30-demography_files/figure-html/unnamed-chunk-23-1.png" width="80%" /></p>
+<p>How about we take our NC counties data and get spatial again?</p>
+<p>Let’s do it!</p>
+<p>Raw population change across North Carolina first!</p>
+<pre class="r"><code>pop_shares %&gt;%
+  select(GEOID, NAME, survey_year, estimate) %&gt;%
+  spread(key = survey_year, value = estimate) %&gt;%
+  mutate(change = `2017` - `2010`) %&gt;%
+  mutate(NAME = str_remove(NAME, &quot;County, North Carolina&quot;)) %&gt;%
+  left_join(nc_counties_sf, by = c(&quot;GEOID&quot; = &quot;GEOID&quot;)) %&gt;%
+  st_as_sf() %&gt;%
+  ggplot() +
+  geom_sf(aes(fill = change), color = &quot;white&quot;) +
+  scale_fill_distiller(&quot;Raw Change&quot;, type = &quot;div&quot;, palette = &quot;Spectral&quot;,
+                       direction = 1, labels = scales::comma_format()) +
+            labs(x = NULL,
+                 y = NULL,
+                 caption = &quot;\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates&quot;)</code></pre>
+<p><img src="/post/2019-10-30-demography_files/figure-html/unnamed-chunk-24-1.png" width="80%" /></p>
+<p>Now percent change in population share.</p>
+<pre class="r"><code>pop_shares %&gt;%
+  select(GEOID, NAME, survey_year, pct_share) %&gt;%
+  spread(key = survey_year, value = pct_share) %&gt;%
+  mutate(change = `2017` - `2010`) %&gt;%
+  mutate(NAME = str_remove(NAME, &quot;County, North Carolina&quot;)) %&gt;%
+  left_join(nc_counties_sf, by = c(&quot;GEOID&quot; = &quot;GEOID&quot;)) %&gt;%
+  st_as_sf() %&gt;%
+  ggplot() +
+  geom_sf(aes(fill = change), color = &quot;white&quot;) +
+  scale_fill_distiller(&quot;Change in Share&quot;, type = &quot;div&quot;, palette = &quot;Spectral&quot;,
+                       direction = 1, labels = scales::percent_format()) +
+            labs(x = NULL,
+                 y = NULL,
+                 caption = &quot;\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates&quot;)</code></pre>
+<p><img src="/post/2019-10-30-demography_files/figure-html/unnamed-chunk-25-1.png" width="80%" /></p>
+</div>
+<div id="guilford-tracts" class="section level1">
+<h1>Guilford Tracts</h1>
+<p>I am using the <code>tigris</code> package again to create a <code>sf</code> object of tracts in Guilford County. I am using the same workflow again so I will spare you all of my walkthrough text.</p>
+<p>Let’s get going..</p>
+<pre class="r"><code>population_tracts &lt;- map_df(.x = years,
+                            .f = ~get_acs(geography = &quot;tract&quot;, variables = &quot;B01001_001&quot;,
+                                  year = ., state = 37, county = 81, key = api_key))</code></pre>
+<pre class="r"><code>population_tracts_updated &lt;- map(.x = years,
+                                 .f = ~rep_len(., 119)) %&gt;%
+  flatten_chr() %&gt;%
+  tibble(survey_year = .) %&gt;%
+  cbind(population_tracts)</code></pre>
+<pre class="r"><code>tracts_sf &lt;- tracts(state = 37, county = 81) %&gt;%
+  st_as_sf()</code></pre>
+<pre class="r"><code>guil_totals &lt;- population_tracts_updated %&gt;%
+  group_by(survey_year) %&gt;%
+  summarise(county_total = sum(estimate)) %&gt;%
+  ungroup()</code></pre>
+<pre class="r"><code>guil_pop_shares &lt;- population_tracts_updated %&gt;%
+  left_join(guil_totals) %&gt;%
+  mutate(pct_share = estimate/county_total)</code></pre>
+<p>Time to plot again!</p>
+<p>Raw change first.</p>
+<pre class="r"><code>guil_pop_shares %&gt;%
+  select(GEOID, NAME, survey_year, estimate) %&gt;%
+  spread(key = survey_year, value = estimate) %&gt;%
+  mutate(change = `2017` - `2010`) %&gt;%
+  mutate(NAME = str_remove(NAME, &quot;County, North Carolina&quot;)) %&gt;%
+  left_join(tracts_sf, by = c(&quot;GEOID&quot; = &quot;GEOID&quot;)) %&gt;%
+  st_as_sf() %&gt;%
+  ggplot() +
+  geom_sf(aes(fill = change), color = &quot;white&quot;) +
+  scale_fill_distiller(&quot;Raw Change&quot;, type = &quot;div&quot;, palette = &quot;Spectral&quot;,
+                       direction = 1, labels = scales::comma_format()) +
+            labs(x = NULL,
+                 y = NULL,
+                 caption = &quot;\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates&quot;)</code></pre>
+<p><img src="/post/2019-10-30-demography_files/figure-html/unnamed-chunk-31-1.png" width="80%" /></p>
+<p>Now percent change in population share.</p>
+<pre class="r"><code>guil_pop_shares %&gt;%
+  select(GEOID, NAME, survey_year, pct_share) %&gt;%
+  spread(key = survey_year, value = pct_share) %&gt;%
+  mutate(change = `2017` - `2010`) %&gt;%
+  mutate(NAME = str_remove(NAME, &quot;County, North Carolina&quot;)) %&gt;%
+  left_join(tracts_sf, by = c(&quot;GEOID&quot; = &quot;GEOID&quot;)) %&gt;%
+  st_as_sf() %&gt;%
+  ggplot() +
+  geom_sf(aes(fill = change), color = &quot;white&quot;) +
+  scale_fill_distiller(&quot;Change in Share&quot;, type = &quot;div&quot;, palette = &quot;Spectral&quot;,
+                       direction = 1, labels = scales::percent_format()) +
+            labs(x = NULL,
+                 y = NULL,
+                 caption = &quot;\nAuthor: Jason Jones\nSource: ACS 5-Year Estimates&quot;)</code></pre>
+<p><img src="/post/2019-10-30-demography_files/figure-html/unnamed-chunk-32-1.png" width="80%" /></p>
+<p>Whew! That’s all for now. Until next time…</p>
+</div>
+
+	  </div>
+	  <hr>
+	  <div>Share via
+	  <a title='email' href='mailto:?subject=Population%20Change&body=%2fpost%2f2019-10-30-demography%2f'><button class='btn btn-sm btn-light'>✉️</button></a>
+	  
+	  </div>
+	  <br>
+	  <code>Tags:
+	  </code>
+	  <br>
+	    
+	      <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "practical-disregard" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+	    
+	</section>
+
+
+
+      </div>
+      
+      <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+  </body><footer>
+  <div class="container-fluid bg-dark text-white text-monospace text-center mt-2">
+    <small>Copyright © 2008–2020 Theme: <a class='text-warning' href="https://themes.gohugo.io/monopriv">Monopriv</a> | Crafted with <a class='text-warning' href="https://gohugo.io">Hugo</a></small>
+  </div>
+  
+</footer>
+<div>
+</div>
+</html>

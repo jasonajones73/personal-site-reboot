@@ -2,69 +2,78 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Practical Disregard</title>
-    <link>https://jasonajones.netlify.app/</link>
+    <link>/</link>
     <description>Recent content on Practical Disregard</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <copyright>Copyright © 2008–2020</copyright>
-    <lastBuildDate>Wed, 29 May 2019 21:13:00 +0000</lastBuildDate>
+    <lastBuildDate>Wed, 30 Oct 2019 21:13:00 +0000</lastBuildDate>
     
-	<atom:link href="https://jasonajones.netlify.app/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
+      <title>Population Change</title>
+      <link>/post/2019-10-30-demography/</link>
+      <pubDate>Wed, 30 Oct 2019 21:13:00 +0000</pubDate>
+      
+      <guid>/post/2019-10-30-demography/</guid>
+      <description>Introduction This is the first of what I hope to be a series of demographic explorations inspired by a recent presentation from Dr.</description>
+    </item>
+    
+    <item>
       <title>Weather Data</title>
-      <link>https://jasonajones.netlify.app/post/2019-05-29-weather-data/</link>
+      <link>/post/2019-05-29-weather-data/</link>
       <pubDate>Wed, 29 May 2019 21:13:00 +0000</pubDate>
       
-      <guid>https://jasonajones.netlify.app/post/2019-05-29-weather-data/</guid>
+      <guid>/post/2019-05-29-weather-data/</guid>
       <description>The Boring Bits # Load packages ---- library(tidyverse) library(tigris) library(sf) library(riem) library(kableExtra) 
  Finding Home Let’s start by grabbing the Chapel Hill boundary and then doing a test plot.</description>
     </item>
     
     <item>
       <title>#ELGL19 On Twitter: A Brief Synthesis</title>
-      <link>https://jasonajones.netlify.app/post/2019-05-24-elgl-twitter/</link>
+      <link>/post/2019-05-24-elgl-twitter/</link>
       <pubDate>Fri, 24 May 2019 21:13:00 +0000</pubDate>
       
-      <guid>https://jasonajones.netlify.app/post/2019-05-24-elgl-twitter/</guid>
+      <guid>/post/2019-05-24-elgl-twitter/</guid>
       <description>The Boring Bits library(tidyverse) library(lubridate) library(tidytext) library(kableExtra) tweets &amp;lt;- read_rds(&amp;quot;data/tweets.rds&amp;quot;) %&amp;gt;% as_tibble() f &amp;lt;- function(time) { x &amp;lt;- time hour(x) &amp;lt;- hour(x)-4 return(x) }</description>
     </item>
     
     <item>
       <title>I Like It When You Call Me Large SpatialPolygonsDataFrame</title>
-      <link>https://jasonajones.netlify.app/post/2019-03-18-elon-geospatial/</link>
+      <link>/post/2019-03-18-elon-geospatial/</link>
       <pubDate>Tue, 19 Mar 2019 21:09:00 +0000</pubDate>
       
-      <guid>https://jasonajones.netlify.app/post/2019-03-18-elon-geospatial/</guid>
+      <guid>/post/2019-03-18-elon-geospatial/</guid>
       <description>Welcome to the wonderful world of R-Spatial! I really enjoy playing around with spatial data in R and for some reason find it much easier than ArcGIS (#sorrynotsorry Esri).</description>
     </item>
     
     <item>
       <title>Spatial Exploration - MUSA Masterclass</title>
-      <link>https://jasonajones.netlify.app/post/2018-11-17-raleigh-police/</link>
+      <link>/post/2018-11-17-raleigh-police/</link>
       <pubDate>Sun, 18 Nov 2018 21:09:00 +0000</pubDate>
       
-      <guid>https://jasonajones.netlify.app/post/2018-11-17-raleigh-police/</guid>
+      <guid>/post/2018-11-17-raleigh-police/</guid>
       <description>This post was inspired by the MUSA Masterclass provided very graciously by Ken Steif and James Cheshire. If you aren’t familiar with the program I would strongly encourage you to check it out - UPenn MUSA Program.</description>
     </item>
     
     <item>
       <title>City of Raleigh Budget Sentiment Analysis</title>
-      <link>https://jasonajones.netlify.app/post/2018-04-29-raleigh-sentiment/</link>
+      <link>/post/2018-04-29-raleigh-sentiment/</link>
       <pubDate>Sun, 29 Apr 2018 21:09:00 +0000</pubDate>
       
-      <guid>https://jasonajones.netlify.app/post/2018-04-29-raleigh-sentiment/</guid>
+      <guid>/post/2018-04-29-raleigh-sentiment/</guid>
       <description>Package Import Load necessary packages and set one global option.
 library(tidyverse) library(pdftools) library(tidytext) library(knitr) library(kableExtra)  Retrieve File Download the file from the City of Raleigh website, read that file in as a character vector, and delete the downloaded file from the directory.</description>
     </item>
     
     <item>
       <title>About</title>
-      <link>https://jasonajones.netlify.app/about/</link>
+      <link>/about/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://jasonajones.netlify.app/about/</guid>
+      <guid>/about/</guid>
       <description>This is going to be fun! At some point, I need to fill this page in with a bunch of content about what I’m doing here.</description>
     </item>
     

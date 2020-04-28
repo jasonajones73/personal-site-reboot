@@ -3,72 +3,77 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>https://jasonajones.netlify.app/post/</loc>
+    <loc>/post/2019-10-30-demography/</loc>
+    <lastmod>2019-10-30T21:13:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/</loc>
+    <lastmod>2019-10-30T21:13:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/</loc>
+    <lastmod>2019-10-30T21:13:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/2019-05-29-weather-data/</loc>
     <lastmod>2019-05-29T21:13:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://jasonajones.netlify.app/</loc>
-    <lastmod>2019-05-29T21:13:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://jasonajones.netlify.app/post/2019-05-29-weather-data/</loc>
-    <lastmod>2019-05-29T21:13:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://jasonajones.netlify.app/post/2019-05-24-elgl-twitter/</loc>
+    <loc>/post/2019-05-24-elgl-twitter/</loc>
     <lastmod>2019-05-24T21:13:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://jasonajones.netlify.app/post/2019-03-18-elon-geospatial/</loc>
+    <loc>/post/2019-03-18-elon-geospatial/</loc>
     <lastmod>2019-03-19T21:09:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://jasonajones.netlify.app/post/2018-11-17-raleigh-police/</loc>
+    <loc>/post/2018-11-17-raleigh-police/</loc>
     <lastmod>2018-11-18T21:09:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://jasonajones.netlify.app/tags/budget/</loc>
+    <loc>/tags/budget/</loc>
     <lastmod>2018-04-29T21:09:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://jasonajones.netlify.app/categories/</loc>
+    <loc>/categories/</loc>
     <lastmod>2018-04-29T21:09:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://jasonajones.netlify.app/post/2018-04-29-raleigh-sentiment/</loc>
+    <loc>/post/2018-04-29-raleigh-sentiment/</loc>
     <lastmod>2018-04-29T21:09:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://jasonajones.netlify.app/categories/r/</loc>
+    <loc>/categories/r/</loc>
     <lastmod>2018-04-29T21:09:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://jasonajones.netlify.app/tags/r-markdown/</loc>
+    <loc>/tags/r-markdown/</loc>
     <lastmod>2018-04-29T21:09:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://jasonajones.netlify.app/tags/sentiment/</loc>
+    <loc>/tags/sentiment/</loc>
     <lastmod>2018-04-29T21:09:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://jasonajones.netlify.app/tags/</loc>
+    <loc>/tags/</loc>
     <lastmod>2018-04-29T21:09:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://jasonajones.netlify.app/about/</loc>
+    <loc>/about/</loc>
   </url>
   
 </urlset>
