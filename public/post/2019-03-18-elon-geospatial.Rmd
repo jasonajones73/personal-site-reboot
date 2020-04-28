@@ -54,7 +54,7 @@ jason_theme <- theme(plot.title = element_text(size = 14),
 # Download Police Incidents
 I use the GeoJSON link on the [Raleigh Open Data Portal](https://data-ral.opendata.arcgis.com/) to download police incidents.
 
-![](/img/elon_class/police_incidents.png)
+![](img/elon_class/police_incidents.png)
 
 ```{r}
 police_incidents <- read_sf("https://opendata.arcgis.com/datasets/24c0b37fa9bb4e16ba8bcaa7e806c615_0.geojson")
@@ -79,7 +79,7 @@ plot(police_incidents$geometry)
 
 
 # Download Wake Census Tracts
-![](/img/elon_class/wake_tracts.png)
+![](img/elon_class/wake_tracts.png)
 
 ```{r}
 wake_tracts <- read_sf("https://opendata.arcgis.com/datasets/21d4ff44498a4007beefdcbde6fcd2a9_0.geojson")
@@ -288,7 +288,7 @@ I wanted to also take a second to explore something that may be more relevant fo
 
 I am going to play around with some [Google Trends data](https://googletrends.github.io/data/) published by their [News Lab](https://newsinitiative.withgoogle.com/training/). This is a pretty cool thing they do that is apparently targeted at training journalists to use Google data more effectively.
 
-![](/img/elon_class/google.png)
+![](img/elon_class/google.png)
 
 ## Download Data & Separate
 

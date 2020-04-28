@@ -84,7 +84,7 @@ library(sp)</code></pre>
 <div id="download-police-incidents" class="section level1">
 <h1>Download Police Incidents</h1>
 <p>I use the GeoJSON link on the <a href="https://data-ral.opendata.arcgis.com/">Raleigh Open Data Portal</a> to download police incidents.</p>
-<p><img src="/img/elon_class/police_incidents.png" /></p>
+<p><img src="img/elon_class/police_incidents.png" /></p>
 <pre class="r"><code>police_incidents &lt;- read_sf(&quot;https://opendata.arcgis.com/datasets/24c0b37fa9bb4e16ba8bcaa7e806c615_0.geojson&quot;)</code></pre>
 </div>
 <div id="filter-missing-coordinates" class="section level1">
@@ -101,7 +101,7 @@ library(sp)</code></pre>
 </div>
 <div id="download-wake-census-tracts" class="section level1">
 <h1>Download Wake Census Tracts</h1>
-<p><img src="/img/elon_class/wake_tracts.png" /></p>
+<p><img src="img/elon_class/wake_tracts.png" /></p>
 <pre class="r"><code>wake_tracts &lt;- read_sf(&quot;https://opendata.arcgis.com/datasets/21d4ff44498a4007beefdcbde6fcd2a9_0.geojson&quot;)</code></pre>
 </div>
 <div id="test-plot-1" class="section level1">
@@ -277,7 +277,7 @@ cowplot::plot_grid(map_1, map_2, labels = &quot;AUTO&quot;, nrow = 1, ncol = 2)<
 <h1>Google Trends</h1>
 <p>I wanted to also take a second to explore something that may be more relevant for you. I am not going to walk through this in detail but want to provide it as an example of another pretty cool way you can combine and use spatial data in R.</p>
 <p>I am going to play around with some <a href="https://googletrends.github.io/data/">Google Trends data</a> published by their <a href="https://newsinitiative.withgoogle.com/training/">News Lab</a>. This is a pretty cool thing they do that is apparently targeted at training journalists to use Google data more effectively.</p>
-<p><img src="/img/elon_class/google.png" /></p>
+<p><img src="img/elon_class/google.png" /></p>
 <div id="download-data-separate" class="section level2">
 <h2>Download Data &amp; Separate</h2>
 <pre class="r"><code>google_dat &lt;- read_csv(&quot;https://raw.githubusercontent.com/googletrends/data/master/Search_Data_US_Congressional_District_04Nov2018.csv&quot;)
