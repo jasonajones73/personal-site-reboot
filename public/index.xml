@@ -7,10 +7,19 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <copyright>Copyright © 2008–2020</copyright>
-    <lastBuildDate>Wed, 30 Oct 2019 21:13:00 +0000</lastBuildDate>
+    <lastBuildDate>Thu, 12 Dec 2019 21:13:00 +0000</lastBuildDate>
     
 	<atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>#TidyTuesday Week 50 Plot Replicas</title>
+      <link>/post/2019-12-12-week50tt/</link>
+      <pubDate>Thu, 12 Dec 2019 21:13:00 +0000</pubDate>
+      
+      <guid>/post/2019-12-12-week50tt/</guid>
+      <description>Documenation Plots are replicated based on Battling Infectious Diseases in the 20th Century: The Impact of Vaccines by Tynan DeBold and Dov Friedman.</description>
+    </item>
     
     <item>
       <title>Population Change</title>
@@ -29,6 +38,15 @@
       <guid>/post/2019-05-29-weather-data/</guid>
       <description>The Boring Bits # Load packages ---- library(tidyverse) library(tigris) library(sf) library(riem) library(kableExtra) 
  Finding Home Let’s start by grabbing the Chapel Hill boundary and then doing a test plot.</description>
+    </item>
+    
+    <item>
+      <title>Summer Meals: Census Tract Optimization</title>
+      <link>/post/2019-05-28-summer-meals/</link>
+      <pubDate>Tue, 28 May 2019 21:13:00 +0000</pubDate>
+      
+      <guid>/post/2019-05-28-summer-meals/</guid>
+      <description>Required Packages library(tidyverse) library(sf) library(tidycensus) library(sp) library(tigris)  Macro Geographies Durham County Polygon nc_counties &amp;lt;- counties(state = &amp;quot;37&amp;quot;) durham_county_sf &amp;lt;- nc_counties %&amp;gt;% st_as_sf() %&amp;gt;% filter(NAME == &amp;quot;Durham&amp;quot;)  Durham County Census Tracts durham_tracts &amp;lt;- tracts(state = &amp;quot;37&amp;quot;, county = &amp;quot;063&amp;quot;) durham_tracts_sf &amp;lt;- durham_tracts %&amp;gt;% st_as_sf()   Creating Decision Factors To isolate the census tracts of potential focus, we will first use five different data points from ACS 5-years estimates for Durham County.</description>
     </item>
     
     <item>
