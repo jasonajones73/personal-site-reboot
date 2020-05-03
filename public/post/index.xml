@@ -7,10 +7,19 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <copyright>Copyright © 2008–2020</copyright>
-    <lastBuildDate>Thu, 12 Dec 2019 21:13:00 +0000</lastBuildDate>
+    <lastBuildDate>Sat, 02 May 2020 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/post/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>COVID Crime Impacts</title>
+      <link>/post/covid-crime-impacts/</link>
+      <pubDate>Sat, 02 May 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/post/covid-crime-impacts/</guid>
+      <description>Curiosity I’ve been thinking a lot lately about what’s different now. When the lockdown first started, I couldn’t stop thinking about how government, specifically local government, was going to have to come up with solutions to new problems on the fly and try as much as possible to limit negative unintended consequences.</description>
+    </item>
     
     <item>
       <title>#TidyTuesday Week 50 Plot Replicas</title>

@@ -5,3 +5,5 @@
 .DS_Store
 content/post/api_key/
 content/post/data/
+public/post/data/
+public/post/api_key/

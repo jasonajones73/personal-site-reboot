@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+	<meta charset="utf-8">
+	<meta name="description" content='A simple privacy oriented bootstrap hugo blog'>
+	
+		
+		<meta name="keywords" content='R Markdown, R, crime, tidyverse, open data, '>
+	
+	
+	
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="generator" content="Hugo 0.69.2" />
+	<link href="https://stackpath.bootstrapcdn.com/bootswatch/4.4.1/sketchy/bootstrap.min.css" rel="stylesheet" integrity="sha384-2kOE+STGAkgemIkUbGtoZ8dJLqfvJ/xzRnimSkQN7viOfwRvWseF7lqcuNXmjwrL" crossorigin="anonymous">
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css">
+	<title>COVID Crime Impacts</title>
+</head>
+<body>
+      <div id="content"><div class="container-fluid">
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="/">Practical Disregard</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggle" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navbarToggle">
+    <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+      <li class="nav-item active">
+        <a class="nav-link" href="/"><span class="btn btn-primary">Home</span> <span class="sr-only">(current)</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href='/post'><span class="btn btn-success">Blog</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href='/tags'><span class="btn btn-warning">Tags</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href='/about'><span class="btn btn-info">About</span></a>
+      </li>
+    </ul>
+  </div>
+</nav>
+</div>
+<br>
+<br>
+
+
+	<section class="container text-justified mt-3">
+	  <h2 class="font-weight-bold">COVID Crime Impacts</h2>
+	  <small class="text-secondary mb-5">Posted on May 2, 2020 | 6 minute read</small>
+	  <div class="text-monospace mt-2">
+		  
+
+
+<div id="curiosity" class="section level1">
+<h1>Curiosity</h1>
+<p>I’ve been thinking a lot lately about what’s different now. When the lockdown first started, I couldn’t stop thinking about how government, specifically local government, was going to have to come up with solutions to new problems on the fly and try as much as possible to limit negative unintended consequences. I still am thinking about that a lot but I have definitely found myself considering more and more what it would be like to be faced with analytic questions in the middle of all of this in local government. And I don’t mean the brainstorming type of questions, I mean the Police Chief just walked into your office and asked you to take a look at the data and tell her exactly what is different. Sure we have our instincts and experience but is there anything in the data right now that might be useful?</p>
+<p>Considering you have access to data (which is still a major problem for a lot of local governments out there), I think this would be a really exciting question to explore. Let’s take a quick crack at how someone might approach this question in a quick way to generate some insights. We may walk away with more questions than answers but that is generally the fun of it!</p>
+</div>
+<div id="the-data" class="section level1">
+<h1>The Data</h1>
+<p>I am going to go with a dataset that I know is fairly robust just to make sure I have something good to play around with. I’m pulling down Police Department Calls for Service from the City of San Francisco’s open data portal. There is an <code>R</code> package interface to these Socrata data portals but I just downloaded to <code>.csv</code> to make things simple.</p>
+<p>Let’s load the data really quick and take a look.</p>
+<pre class="r"><code>sf_crime &lt;- read_csv(&quot;data/Police_Department_Calls_for_Service.csv&quot;)
+
+str(sf_crime)</code></pre>
+<pre><code>## tibble [3,340,360 × 14] (S3: spec_tbl_df/tbl_df/tbl/data.frame)
+##  $ Crime Id                : num [1:3340360] 1.9e+08 1.9e+08 1.9e+08 1.9e+08 1.9e+08 ...
+##  $ Original Crime Type Name: chr [1:3340360] &quot;Noise Nuisance&quot; &quot;Stolen Vehicle&quot; &quot;Fight No Weapon&quot; &quot;Well Being Check&quot; ...
+##  $ Report Date             : chr [1:3340360] &quot;01/01/2019&quot; &quot;01/05/2019&quot; &quot;01/07/2019&quot; &quot;01/25/2019&quot; ...
+##  $ Call Date               : chr [1:3340360] &quot;01/01/2019&quot; &quot;01/05/2019&quot; &quot;01/07/2019&quot; &quot;01/25/2019&quot; ...
+##  $ Offense Date            : chr [1:3340360] &quot;01/01/2019&quot; &quot;01/05/2019&quot; &quot;01/07/2019&quot; &quot;01/25/2019&quot; ...
+##  $ Call Time               : &#39;hms&#39; num [1:3340360] 01:32:00 18:31:00 15:27:00 19:51:00 ...
+##   ..- attr(*, &quot;units&quot;)= chr &quot;secs&quot;
+##  $ Call Date Time          : chr [1:3340360] &quot;01/01/2019 01:32:00 AM&quot; &quot;01/05/2019 06:31:00 PM&quot; &quot;01/07/2019 03:27:00 PM&quot; &quot;01/25/2019 07:51:00 PM&quot; ...
+##  $ Disposition             : chr [1:3340360] &quot;ADV&quot; &quot;REP&quot; &quot;UTL&quot; &quot;HAN&quot; ...
+##  $ Address                 : chr [1:3340360] &quot;400 Block Of 2nd Av&quot; &quot;28th Av/balboa St&quot; &quot;400 Block Of Bush St&quot; &quot;Paul Av/carr St&quot; ...
+##  $ City                    : chr [1:3340360] &quot;San Francisco&quot; &quot;San Francisco&quot; &quot;San Francisco&quot; &quot;San Francisco&quot; ...
+##  $ State                   : chr [1:3340360] &quot;CA&quot; &quot;CA&quot; &quot;CA&quot; &quot;CA&quot; ...
+##  $ Agency Id               : num [1:3340360] 1 1 1 1 1 1 1 1 1 1 ...
+##  $ Address Type            : chr [1:3340360] &quot;Premise Address&quot; &quot;Intersection&quot; &quot;Premise Address&quot; &quot;Intersection&quot; ...
+##  $ Common Location         : chr [1:3340360] NA NA NA NA ...
+##  - attr(*, &quot;spec&quot;)=
+##   .. cols(
+##   ..   `Crime Id` = col_double(),
+##   ..   `Original Crime Type Name` = col_character(),
+##   ..   `Report Date` = col_character(),
+##   ..   `Call Date` = col_character(),
+##   ..   `Offense Date` = col_character(),
+##   ..   `Call Time` = col_time(format = &quot;&quot;),
+##   ..   `Call Date Time` = col_character(),
+##   ..   Disposition = col_character(),
+##   ..   Address = col_character(),
+##   ..   City = col_character(),
+##   ..   State = col_character(),
+##   ..   `Agency Id` = col_double(),
+##   ..   `Address Type` = col_character(),
+##   ..   `Common Location` = col_character()
+##   .. )</code></pre>
+<p>Very nice! Over three million records but it definitely needs a little massaging. I’m thinking that I want to be able to create comparison cohorts for the available years to see if I can isolate any differences to think more critically about. To do that, I’m going to need to do some work on my time variables. Let’s see what we can do!</p>
+<pre class="r"><code>sf_crime_clean &lt;- sf_crime %&gt;%
+  janitor::clean_names() %&gt;%
+  mutate(report_date = as.POSIXct(call_date, format = &quot;%m/%d/%Y&quot;)) %&gt;%
+  mutate(doy = yday(report_date)) %&gt;%
+  filter(doy &lt;= yday(Sys.Date())) %&gt;%
+  mutate(report_year = year(report_date))</code></pre>
+<p>Now we can check this out really quick to see what it gave us.</p>
+<pre class="r"><code>sf_crime_clean %&gt;%
+  group_by(report_year) %&gt;%
+  count(name = &quot;report_count&quot;) %&gt;%
+  ungroup() %&gt;%
+  ggplot(aes(report_year, report_count)) +
+  geom_col(fill = &quot;#133140&quot;) +
+  geom_label(aes(label = scales::comma(report_count)), nudge_y = -20000) +
+  scale_y_continuous(labels = scales::comma_format()) +
+  jason_theme</code></pre>
+<p><img src="/post/2020-05-02-covid-crime-impacts.en_files/figure-html/unnamed-chunk-3-1.png" width="100%" /></p>
+<p>Great! I think I will choose to discard 2016 from now on. Looks like an incomplete year.</p>
+<p>Let’s look at some differences in calls by year and description. I’m not being super analytic here, just scraping the surface for some high-level differences.</p>
+<pre class="r"><code>sf_crime_clean %&gt;%
+  filter(report_year != 2016) %&gt;%
+  group_by(report_year, original_crime_type_name) %&gt;%
+  count(name = &quot;report_count&quot;) %&gt;%
+  ungroup() %&gt;%
+  pivot_wider(names_from = report_year, values_from = report_count) %&gt;%
+  mutate_at(.vars = vars(2:4), .funs = ~`2020` - .) %&gt;%
+  pivot_longer(cols = 2:5, names_to = &quot;report_year&quot;, values_to = &quot;report_count&quot;) %&gt;%
+  arrange(report_count) %&gt;%
+  head(n = 10)</code></pre>
+<pre><code>## # A tibble: 10 x 3
+##    original_crime_type_name report_year report_count
+##    &lt;chr&gt;                    &lt;chr&gt;              &lt;int&gt;
+##  1 Traffic Stop             2017              -22589
+##  2 Traffic Stop             2018              -15112
+##  3 Homeless Complaint       2018              -10802
+##  4 Traffic Stop             2019               -8591
+##  5 Homeless Complaint       2017               -7582
+##  6 22500e                   2018               -6636
+##  7 Muni Inspection          2018               -6303
+##  8 22500e                   2017               -6254
+##  9 Suspicious Person        2017               -5466
+## 10 Suspicious Person        2018               -5149</code></pre>
+<p>Ok - I think I am going to choose to isolate <code>Traffic Stop</code>, <code>Homeless Complaint</code>, and <code>Suspicious Person</code>.</p>
+<pre class="r"><code>of_interest &lt;- c(&quot;Traffic Stop&quot;, &quot;Homeless Complaint&quot;, &quot;Suspicious Person&quot;)
+
+sf_crime_clean &lt;- sf_crime_clean %&gt;%
+  filter(report_year != 2016) %&gt;%
+  filter(original_crime_type_name %in% of_interest)</code></pre>
+<p>Now maybe we should make a quick plot just to take a look at all three together.</p>
+<pre class="r"><code>sf_crime_clean %&gt;%
+  group_by(report_year, doy, original_crime_type_name) %&gt;%
+  count(name = &quot;report_count&quot;) %&gt;%
+  ggplot(aes(doy, report_count, color = as.character(report_year))) +
+  geom_line(color = &quot;#133140&quot;) +
+  facet_wrap(~original_crime_type_name) +
+  gghighlight(report_year == 2020, calculate_per_facet = TRUE) +
+  geom_vline(xintercept = 75, color = &quot;black&quot;) +
+  jason_theme +
+  theme(strip.background = element_rect(fill = &quot;#133140&quot;),
+        strip.text = element_text(color = &quot;white&quot;, face = &quot;bold&quot;, size = 12))</code></pre>
+<p><img src="/post/2020-05-02-covid-crime-impacts.en_files/figure-html/unnamed-chunk-6-1.png" width="100%" /></p>
+<p>Wow! All three look like they are down for this period of the year but Traffic Stops appear to be significantly impacted!</p>
+<p>Quick check of trend differences now.</p>
+<pre class="r"><code>sf_crime_clean %&gt;%
+  filter(original_crime_type_name == &quot;Traffic Stop&quot;) %&gt;%
+  group_by(report_year, doy, original_crime_type_name) %&gt;%
+  count(name = &quot;report_count&quot;) %&gt;%
+  ungroup() %&gt;%
+  ggplot(aes(doy, report_count, group = as.character(report_year))) +
+  geom_line(color = &quot;#133140&quot;) +
+  geom_smooth(se = F, method = &quot;lm&quot;, color = &quot;#133140&quot;) +
+  gghighlight(report_year == 2020, calculate_per_facet = TRUE) +
+  geom_vline(xintercept = 75, color = &quot;black&quot;) +
+  jason_theme +
+  theme(strip.background = element_rect(fill = &quot;#133140&quot;),
+        strip.text = element_text(color = &quot;white&quot;, face = &quot;bold&quot;, size = 12))</code></pre>
+<p><img src="/post/2020-05-02-covid-crime-impacts.en_files/figure-html/unnamed-chunk-7-1.png" width="100%" /></p>
+<p>And for the final plot, I’m giving <a href="https://twitter.com/KenSteif/status/1247593284542717954?s=20">Dr. Ken Steif’s recommendation</a> a try. I’m interested in seeing not only differences by year, but differences pre and post COVID-19 lockdown.</p>
+<pre class="r"><code>sf_crime_clean %&gt;%
+  filter(original_crime_type_name == &quot;Traffic Stop&quot;) %&gt;%
+  group_by(report_year, doy, original_crime_type_name) %&gt;%
+  count(name = &quot;report_count&quot;) %&gt;%
+  ungroup() %&gt;%
+  mutate(covid_test = doy &lt; 75) %&gt;%
+  ggplot(aes(doy, report_count, group = interaction(covid_test, report_year))) +
+  geom_line(color = &quot;#133140&quot;) +
+  geom_smooth(se = F, method = &quot;lm&quot;, color = &quot;#133140&quot;) +
+  gghighlight(report_year == 2020) +
+  geom_vline(xintercept = 75, color = &quot;black&quot;) +
+  labs(title = expression(paste(bold(&quot;San Francisco Open Data: &quot;), &quot;Police Calls for Service&quot;)),
+       subtitle = &quot;Difference in Traffic Stops by year, pre and post COVID lockdown. Prior years\nin grey and current year (2020) is highlighted.&quot;, caption = &quot;Source: https://datasf.org/opendata/\nAuthor: Jason Jones&quot;) +
+  jason_theme +
+  theme(strip.background = element_rect(fill = &quot;#133140&quot;),
+        strip.text = element_text(color = &quot;white&quot;, face = &quot;bold&quot;, size = 12))</code></pre>
+<p><img src="/post/2020-05-02-covid-crime-impacts.en_files/figure-html/unnamed-chunk-8-1.png" width="100%" /></p>
+</div>
+
+	  </div>
+	  <hr>
+	  <div>Share via
+	  <a title='email' href='mailto:?subject=COVID%20Crime%20Impacts&body=%2fpost%2fcovid-crime-impacts%2f'><button class='btn btn-sm btn-light'>✉️</button></a>
+	  
+	  </div>
+	  <br>
+	  <code>Tags:<span class='badge badge-dark'><a class='text-white' href='/tags/r%20markdown'>R Markdown</a></span>
+	  <span class='badge badge-dark'><a class='text-white' href='/tags/r'>R</a></span>
+	  <span class='badge badge-dark'><a class='text-white' href='/tags/crime'>crime</a></span>
+	  <span class='badge badge-dark'><a class='text-white' href='/tags/tidyverse'>tidyverse</a></span>
+	  <span class='badge badge-dark'><a class='text-white' href='/tags/open%20data'>open data</a></span>
+	  
+	  </code>
+	  <br>
+	    
+	      <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "practical-disregard" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+	    
+	</section>
+
+
+
+      </div>
+      
+      <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+  </body><footer>
+  <div class="container-fluid bg-dark text-white text-monospace text-center mt-2">
+    <small>Copyright © 2008–2020 Theme: <a class='text-warning' href="https://themes.gohugo.io/monopriv">Monopriv</a> | Crafted with <a class='text-warning' href="https://gohugo.io">Hugo</a></small>
+  </div>
+  
+</footer>
+<div>
+</div>
+</html>
