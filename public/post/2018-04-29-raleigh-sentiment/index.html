@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+	<meta charset="utf-8">
+	<meta name="description" content='A simple privacy oriented bootstrap hugo blog'>
+	
+		
+		<meta name="keywords" content='R Markdown, budget, sentiment, '>
+	
+	
+	
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="generator" content="Hugo 0.69.2" />
+	<link href="https://stackpath.bootstrapcdn.com/bootswatch/4.4.1/sketchy/bootstrap.min.css" rel="stylesheet" integrity="sha384-2kOE+STGAkgemIkUbGtoZ8dJLqfvJ/xzRnimSkQN7viOfwRvWseF7lqcuNXmjwrL" crossorigin="anonymous">
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css">
+	<title>City of Raleigh Budget Sentiment Analysis</title>
+</head>
+<body>
+      <div id="content"><div class="container-fluid">
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="/">Practical Disregard</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggle" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navbarToggle">
+    <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+      <li class="nav-item active">
+        <a class="nav-link" href="/"><span class="btn btn-primary">Home</span> <span class="sr-only">(current)</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href='/post'><span class="btn btn-success">Blog</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href='/tags'><span class="btn btn-warning">Tags</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href='/about'><span class="btn btn-info">About</span></a>
+      </li>
+    </ul>
+  </div>
+</nav>
+</div>
+<br>
+<br>
+
+
+	<section class="container text-justified mt-3">
+	  <h2 class="font-weight-bold">City of Raleigh Budget Sentiment Analysis</h2>
+	  <small class="text-secondary mb-5">Posted on April 29, 2018 | 1 minute read</small>
+	  <div class="text-monospace mt-2">
+		  
+<script src="/rmarkdown-libs/kePrint/kePrint.js"></script>
+
+
+<div id="package-import" class="section level2">
+<h2>Package Import</h2>
+<p>Load necessary packages and set one global option.</p>
+<pre class="r"><code>library(tidyverse)
+library(pdftools)
+library(tidytext)
+library(knitr)
+library(kableExtra)</code></pre>
+</div>
+<div id="retrieve-file" class="section level2">
+<h2>Retrieve File</h2>
+<p>Download the file from the City of Raleigh website, read that file in as a character vector, and delete the downloaded file from the directory.</p>
+<pre class="r"><code>download.file(&quot;https://cityofraleigh0drupal.blob.core.usgovcloudapi.net/drupal-prod/COR11/FY2018AdoptedBudget20160612.pdf&quot;,
+              &quot;FY2018AdoptedBudget.pdf&quot;,
+              mode = &quot;wb&quot;)
+
+txt = pdf_text(&quot;FY2018AdoptedBudget.pdf&quot;)
+
+unlink(&quot;FY2018AdoptedBudget.pdf&quot;)</code></pre>
+</div>
+<div id="create-data-frame" class="section level2">
+<h2>Create Data Frame</h2>
+<p>Create a page number character vector, create a data frame by binding the page number character vector with the extracted text, and finally “unnest” all of the page text into individual words.</p>
+<pre class="r"><code>page = as.character(1:length(txt))
+
+df = data.frame(cbind(page, txt))
+
+budget_words = df %&gt;%
+  mutate(txt = as.character(txt)) %&gt;%
+  unnest_tokens(word, txt)</code></pre>
+</div>
+<div id="cleaning" class="section level2">
+<h2>Cleaning</h2>
+<p>Remove stop words and save as clean object, join sentiment lexicon with clean object, and group the object by page and sentiments before summarising.</p>
+<pre class="r"><code>cleaned = budget_words %&gt;%
+  anti_join(stop_words)
+
+sentiment = cleaned %&gt;%
+  inner_join(get_sentiments(&quot;nrc&quot;))
+
+sent_count = sentiment %&gt;%
+  group_by(page, sentiment) %&gt;%
+  summarise(sent_count = n()) %&gt;%
+  ungroup() %&gt;%
+  mutate(page = as.integer(page))</code></pre>
+</div>
+<div id="visualize" class="section level2">
+<h2>Visualize</h2>
+<p><img src="/post/2018-04-29-raleigh-sentiment_files/figure-html/unnamed-chunk-5-1.png" width="100%" /></p>
+</div>
+<div id="negative-word-table" class="section level2">
+<h2>Negative Word Table</h2>
+<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Word
+</th>
+<th style="text-align:right;">
+Word Count
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+APPROPRIATION
+</td>
+<td style="text-align:right;">
+77
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+BONDS
+</td>
+<td style="text-align:right;">
+50
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+DEBT
+</td>
+<td style="text-align:right;">
+219
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+EMERGENCY
+</td>
+<td style="text-align:right;">
+67
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+EXPENDITURE
+</td>
+<td style="text-align:right;">
+123
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+FEE
+</td>
+<td style="text-align:right;">
+136
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+INCOME
+</td>
+<td style="text-align:right;">
+65
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+RISK
+</td>
+<td style="text-align:right;">
+31
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+TAX
+</td>
+<td style="text-align:right;">
+153
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+WASTE
+</td>
+<td style="text-align:right;">
+122
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="trust-word-table" class="section level2">
+<h2>Trust Word Table</h2>
+<table class="table table-hover" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Word
+</th>
+<th style="text-align:right;">
+Word Count
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+BUDGET
+</td>
+<td style="text-align:right;">
+400
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CENTER
+</td>
+<td style="text-align:right;">
+196
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+COUNCIL
+</td>
+<td style="text-align:right;">
+173
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+GRANT
+</td>
+<td style="text-align:right;">
+85
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+IMPROVEMENT
+</td>
+<td style="text-align:right;">
+93
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MANAGEMENT
+</td>
+<td style="text-align:right;">
+165
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+ORDINANCE
+</td>
+<td style="text-align:right;">
+88
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+PLANNING
+</td>
+<td style="text-align:right;">
+77
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+RESOURCES
+</td>
+<td style="text-align:right;">
+105
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+SYSTEM
+</td>
+<td style="text-align:right;">
+101
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+	  </div>
+	  <hr>
+	  <div>Share via
+	  <a title='email' href='mailto:?subject=City%20of%20Raleigh%20Budget%20Sentiment%20Analysis&body=%2fpost%2f2018-04-29-raleigh-sentiment%2f'><button class='btn btn-sm btn-light'>✉️</button></a>
+	  
+	  </div>
+	  <br>
+	  <code>Tags:<span class='badge badge-dark'><a class='text-white' href='/tags/r%20markdown'>R Markdown</a></span>
+	  <span class='badge badge-dark'><a class='text-white' href='/tags/budget'>budget</a></span>
+	  <span class='badge badge-dark'><a class='text-white' href='/tags/sentiment'>sentiment</a></span>
+	  
+	  </code>
+	  <br>
+	    
+	      <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "practical-disregard" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+	    
+	</section>
+
+
+
+      </div>
+      
+      <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+  </body><footer>
+  <div class="container-fluid bg-dark text-white text-monospace text-center mt-2">
+    <small>Copyright © 2008–2020 Theme: <a class='text-warning' href="https://themes.gohugo.io/monopriv">Monopriv</a> | Crafted with <a class='text-warning' href="https://gohugo.io">Hugo</a></small>
+  </div>
+  
+</footer>
+<div>
+</div>
+</html>

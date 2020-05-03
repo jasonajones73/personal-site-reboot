@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+	<meta charset="utf-8">
+	<meta name="description" content='A simple privacy oriented bootstrap hugo blog'>
+	
+		
+		<meta name="keywords" content=''>
+	
+	
+	
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="generator" content="Hugo 0.69.2" />
+	<link href="https://stackpath.bootstrapcdn.com/bootswatch/4.4.1/sketchy/bootstrap.min.css" rel="stylesheet" integrity="sha384-2kOE+STGAkgemIkUbGtoZ8dJLqfvJ/xzRnimSkQN7viOfwRvWseF7lqcuNXmjwrL" crossorigin="anonymous">
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css">
+	<title>Summer Meals: Census Tract Optimization</title>
+</head>
+<body>
+      <div id="content"><div class="container-fluid">
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="/">Practical Disregard</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggle" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navbarToggle">
+    <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+      <li class="nav-item active">
+        <a class="nav-link" href="/"><span class="btn btn-primary">Home</span> <span class="sr-only">(current)</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href='/post'><span class="btn btn-success">Blog</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href='/tags'><span class="btn btn-warning">Tags</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href='/about'><span class="btn btn-info">About</span></a>
+      </li>
+    </ul>
+  </div>
+</nav>
+</div>
+<br>
+<br>
+
+
+	<section class="container text-justified mt-3">
+	  <h2 class="font-weight-bold">Summer Meals: Census Tract Optimization</h2>
+	  <small class="text-secondary mb-5">Posted on May 28, 2019 | 4 minute read</small>
+	  <div class="text-monospace mt-2">
+		  
+<script src="/rmarkdown-libs/kePrint/kePrint.js"></script>
+
+
+<div id="required-packages" class="section level1">
+<h1>Required Packages</h1>
+<pre class="r"><code>library(tidyverse)
+library(sf)
+library(tidycensus)
+library(sp)
+library(tigris)</code></pre>
+</div>
+<div id="macro-geographies" class="section level1">
+<h1>Macro Geographies</h1>
+<div id="durham-county-polygon" class="section level2">
+<h2>Durham County Polygon</h2>
+<pre class="r"><code>nc_counties &lt;- counties(state = &quot;37&quot;)
+
+durham_county_sf &lt;- nc_counties %&gt;%
+  st_as_sf() %&gt;%
+  filter(NAME == &quot;Durham&quot;)</code></pre>
+</div>
+<div id="durham-county-census-tracts" class="section level2">
+<h2>Durham County Census Tracts</h2>
+<pre class="r"><code>durham_tracts &lt;- tracts(state = &quot;37&quot;, county = &quot;063&quot;)
+
+durham_tracts_sf &lt;- durham_tracts %&gt;%
+  st_as_sf()</code></pre>
+</div>
+</div>
+<div id="creating-decision-factors" class="section level1 tabset tabset-fade tabset-pills">
+<h1>Creating Decision Factors</h1>
+<p>To isolate the census tracts of potential focus, we will first use five different data points from ACS 5-years estimates for Durham County.</p>
+<ol style="list-style-type: decimal">
+<li>Population Age 3 And Over, Enrolled in School And In Poverty</li>
+<li>Household Received Food Stamps/SNAP in the Past 12 Months</li>
+<li>Median Household Income</li>
+<li>Median Gross Rent as a Percentage of Household Income</li>
+<li>Workers with No Vehicle Available</li>
+</ol>
+<p>For factors 1, 2, 3, and 5 we will isolate census tracts by only selecting those that have estimates greater than the overall county median. For factor 4 we will simply select only census tracts that are greater than 30%.</p>
+<div id="decision-factor-1" class="section level2">
+<h2>Decision Factor 1</h2>
+<pre class="r"><code>school_age_poverty &lt;- get_acs(geography = &quot;tract&quot;, variables = &quot;B14006_003&quot;, year = 2017, key = api_key,
+                                state = &quot;37&quot;, county = &quot;063&quot;, geometry = TRUE, summary_var = &quot;B14006_001&quot;, survey = &quot;acs5&quot;)
+
+pct_poverty &lt;- school_age_poverty %&gt;%
+  mutate(pct = round(estimate/summary_est, digits = 2))
+
+poverty_comare &lt;- median(pct_poverty$pct, na.rm = TRUE)
+
+pct_poverty %&gt;%
+  filter(pct &gt; poverty_comare) %&gt;%
+  ggplot() +
+  geom_sf(data = durham_county_sf, fill = &quot;black&quot;, color = &quot;black&quot;) +
+  geom_sf(fill = &quot;red&quot;) +
+  theme(panel.background = element_blank())</code></pre>
+<p><img src="/post/2019-05-28-summer-meals_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<pre class="r"><code>df_1 &lt;- pct_poverty %&gt;%
+  filter(pct &gt; poverty_comare)</code></pre>
+</div>
+<div id="decision-factor-2" class="section level2">
+<h2>Decision Factor 2</h2>
+<pre class="r"><code>snap_recepients &lt;- get_acs(geography = &quot;tract&quot;, variables = &quot;B22007_002&quot;, year = 2017, key = api_key,
+                           state = &quot;37&quot;, county = &quot;063&quot;, geometry = TRUE, summary_var = &quot;B22007_001&quot;)
+
+pct_snap &lt;- snap_recepients %&gt;%
+  mutate(pct = round(estimate/summary_est, digits = 2))
+
+snap_compare &lt;- median(pct_snap$pct, na.rm = TRUE)
+
+snap_recepients %&gt;%
+  filter(estimate &gt; snap_compare) %&gt;%
+  ggplot() +
+  geom_sf(data = durham_county_sf, fill = &quot;black&quot;, color = &quot;black&quot;) +
+  geom_sf(fill = &quot;red&quot;) +
+  theme(panel.background = element_blank())</code></pre>
+<p><img src="/post/2019-05-28-summer-meals_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<pre class="r"><code>df_2 &lt;- snap_recepients %&gt;%
+  filter(estimate &gt; snap_compare)</code></pre>
+</div>
+<div id="decision-factor-3" class="section level2">
+<h2>Decision Factor 3</h2>
+<p>Pulling median for entire county because you should not compute median on a group of medians. Also, choosing for ACS 1-year estimate for entire county due to accuracy of estimate.</p>
+<pre class="r"><code>med_household_income &lt;- get_acs(geography = &quot;tract&quot;, variables = &quot;B19013_001&quot;, year = 2017, key = api_key,
+                                state = &quot;37&quot;, county = &quot;063&quot;, geometry = TRUE)
+
+income_compare &lt;- get_acs(geography = &quot;county&quot;, variables = &quot;B19013_001&quot;, year = 2017, key = api_key,
+                          state = &quot;37&quot;, county = &quot;063&quot;, survey = &quot;acs1&quot;) %&gt;%
+  .$estimate
+
+med_household_income %&gt;%
+  filter(estimate &lt; income_compare) %&gt;%
+  ggplot() +
+  geom_sf(data = durham_county_sf, fill = &quot;black&quot;, color = &quot;black&quot;) +
+  geom_sf(fill = &quot;red&quot;) +
+  theme(panel.background = element_blank())</code></pre>
+<p><img src="/post/2019-05-28-summer-meals_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<pre class="r"><code>df_3 &lt;- med_household_income %&gt;%
+  filter(estimate &lt; income_compare)</code></pre>
+</div>
+<div id="decision-factor-4" class="section level2">
+<h2>Decision Factor 4</h2>
+<pre class="r"><code>gross_rent &lt;- get_acs(geography = &quot;tract&quot;, variables = &quot;B25071_001&quot;, year = 2017, key = api_key,
+                      state = &quot;37&quot;, county = &quot;063&quot;, geometry = TRUE)
+
+gross_rent %&gt;%
+  filter(estimate &gt; 30) %&gt;%
+  ggplot() +
+  geom_sf(data = durham_county_sf, fill = &quot;black&quot;, color = &quot;black&quot;) +
+  geom_sf(fill = &quot;red&quot;) +
+  theme(panel.background = element_blank())</code></pre>
+<p><img src="/post/2019-05-28-summer-meals_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<pre class="r"><code>df_4 &lt;- gross_rent %&gt;%
+  filter(estimate &gt; 30)</code></pre>
+</div>
+<div id="decision-factor-5" class="section level2">
+<h2>Decision Factor 5</h2>
+<pre class="r"><code>no_vehicle &lt;- get_acs(geography = &quot;tract&quot;, variables = &quot;B08014_002&quot;, year = 2017, key = api_key,
+                      state = &quot;37&quot;, county = &quot;063&quot;, geometry = TRUE, summary_var = &quot;B08014_001&quot;)
+
+pct_no_vehicle &lt;- no_vehicle %&gt;%
+  mutate(pct = round(estimate/summary_est, digits = 2))
+
+vehicle_compare &lt;- median(pct_no_vehicle$pct, na.rm = TRUE)
+  
+pct_no_vehicle %&gt;%
+  filter(pct &gt; vehicle_compare) %&gt;%
+  ggplot() +
+  geom_sf(data = durham_county_sf, fill = &quot;black&quot;, color = &quot;black&quot;) +
+  geom_sf(fill = &quot;red&quot;) +
+  theme(panel.background = element_blank())</code></pre>
+<p><img src="/post/2019-05-28-summer-meals_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<pre class="r"><code>df_5 &lt;- pct_no_vehicle %&gt;%
+  filter(pct &gt; vehicle_compare)</code></pre>
+</div>
+</div>
+<div id="putting-it-all-together" class="section level1">
+<h1>Putting It All Together</h1>
+<div id="filtered-object" class="section level2">
+<h2>Filtered Object</h2>
+<p>This creates an object containing only census tracts that meet all five decision factor criteria</p>
+<pre class="r"><code>tracts_filt &lt;- durham_tracts_sf %&gt;%
+  filter(GEOID %in% df_1$GEOID) %&gt;%
+  filter(GEOID %in% df_2$GEOID) %&gt;%
+  filter(GEOID %in% df_3$GEOID) %&gt;%
+  filter(GEOID %in% df_4$GEOID) %&gt;%
+  filter(GEOID %in% df_5$GEOID)</code></pre>
+</div>
+<div id="final-map-visual" class="section level2">
+<h2>Final Map Visual</h2>
+<pre class="r"><code>tracts_filt %&gt;%
+  ggplot() +
+  geom_sf(data = durham_tracts_sf, fill = &quot;light grey&quot;, color = &quot;black&quot;) +
+  geom_sf(fill = &quot;red&quot;) +
+  theme(panel.background = element_blank())</code></pre>
+<p><img src="/post/2019-05-28-summer-meals_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+</div>
+<div id="supplemental-table" class="section level2">
+<h2>Supplemental Table</h2>
+<pre class="r"><code>tracts_filt %&gt;%
+  as_tibble() %&gt;%
+  select(1:6) %&gt;%
+  kableExtra::kable() %&gt;%
+  kableExtra::kable_styling()</code></pre>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+STATEFP
+</th>
+<th style="text-align:left;">
+COUNTYFP
+</th>
+<th style="text-align:left;">
+TRACTCE
+</th>
+<th style="text-align:left;">
+GEOID
+</th>
+<th style="text-align:left;">
+NAME
+</th>
+<th style="text-align:left;">
+NAMELSAD
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+37
+</td>
+<td style="text-align:left;">
+063
+</td>
+<td style="text-align:left;">
+001002
+</td>
+<td style="text-align:left;">
+37063001002
+</td>
+<td style="text-align:left;">
+10.02
+</td>
+<td style="text-align:left;">
+Census Tract 10.02
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+37
+</td>
+<td style="text-align:left;">
+063
+</td>
+<td style="text-align:left;">
+001301
+</td>
+<td style="text-align:left;">
+37063001301
+</td>
+<td style="text-align:left;">
+13.01
+</td>
+<td style="text-align:left;">
+Census Tract 13.01
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+37
+</td>
+<td style="text-align:left;">
+063
+</td>
+<td style="text-align:left;">
+001303
+</td>
+<td style="text-align:left;">
+37063001303
+</td>
+<td style="text-align:left;">
+13.03
+</td>
+<td style="text-align:left;">
+Census Tract 13.03
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+37
+</td>
+<td style="text-align:left;">
+063
+</td>
+<td style="text-align:left;">
+001304
+</td>
+<td style="text-align:left;">
+37063001304
+</td>
+<td style="text-align:left;">
+13.04
+</td>
+<td style="text-align:left;">
+Census Tract 13.04
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+37
+</td>
+<td style="text-align:left;">
+063
+</td>
+<td style="text-align:left;">
+001502
+</td>
+<td style="text-align:left;">
+37063001502
+</td>
+<td style="text-align:left;">
+15.02
+</td>
+<td style="text-align:left;">
+Census Tract 15.02
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+37
+</td>
+<td style="text-align:left;">
+063
+</td>
+<td style="text-align:left;">
+002015
+</td>
+<td style="text-align:left;">
+37063002015
+</td>
+<td style="text-align:left;">
+20.15
+</td>
+<td style="text-align:left;">
+Census Tract 20.15
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+37
+</td>
+<td style="text-align:left;">
+063
+</td>
+<td style="text-align:left;">
+002026
+</td>
+<td style="text-align:left;">
+37063002026
+</td>
+<td style="text-align:left;">
+20.26
+</td>
+<td style="text-align:left;">
+Census Tract 20.26
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+37
+</td>
+<td style="text-align:left;">
+063
+</td>
+<td style="text-align:left;">
+002300
+</td>
+<td style="text-align:left;">
+37063002300
+</td>
+<td style="text-align:left;">
+23
+</td>
+<td style="text-align:left;">
+Census Tract 23
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+37
+</td>
+<td style="text-align:left;">
+063
+</td>
+<td style="text-align:left;">
+002027
+</td>
+<td style="text-align:left;">
+37063002027
+</td>
+<td style="text-align:left;">
+20.27
+</td>
+<td style="text-align:left;">
+Census Tract 20.27
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+37
+</td>
+<td style="text-align:left;">
+063
+</td>
+<td style="text-align:left;">
+000101
+</td>
+<td style="text-align:left;">
+37063000101
+</td>
+<td style="text-align:left;">
+1.01
+</td>
+<td style="text-align:left;">
+Census Tract 1.01
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+37
+</td>
+<td style="text-align:left;">
+063
+</td>
+<td style="text-align:left;">
+001709
+</td>
+<td style="text-align:left;">
+37063001709
+</td>
+<td style="text-align:left;">
+17.09
+</td>
+<td style="text-align:left;">
+Census Tract 17.09
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+37
+</td>
+<td style="text-align:left;">
+063
+</td>
+<td style="text-align:left;">
+001802
+</td>
+<td style="text-align:left;">
+37063001802
+</td>
+<td style="text-align:left;">
+18.02
+</td>
+<td style="text-align:left;">
+Census Tract 18.02
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+37
+</td>
+<td style="text-align:left;">
+063
+</td>
+<td style="text-align:left;">
+001001
+</td>
+<td style="text-align:left;">
+37063001001
+</td>
+<td style="text-align:left;">
+10.01
+</td>
+<td style="text-align:left;">
+Census Tract 10.01
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+37
+</td>
+<td style="text-align:left;">
+063
+</td>
+<td style="text-align:left;">
+000102
+</td>
+<td style="text-align:left;">
+37063000102
+</td>
+<td style="text-align:left;">
+1.02
+</td>
+<td style="text-align:left;">
+Census Tract 1.02
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+37
+</td>
+<td style="text-align:left;">
+063
+</td>
+<td style="text-align:left;">
+000500
+</td>
+<td style="text-align:left;">
+37063000500
+</td>
+<td style="text-align:left;">
+5
+</td>
+<td style="text-align:left;">
+Census Tract 5
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+37
+</td>
+<td style="text-align:left;">
+063
+</td>
+<td style="text-align:left;">
+000900
+</td>
+<td style="text-align:left;">
+37063000900
+</td>
+<td style="text-align:left;">
+9
+</td>
+<td style="text-align:left;">
+Census Tract 9
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+	  </div>
+	  <hr>
+	  <div>Share via
+	  <a title='email' href='mailto:?subject=Summer%20Meals%3a%20Census%20Tract%20Optimization&body=%2fpost%2f2019-05-28-summer-meals%2f'><button class='btn btn-sm btn-light'>✉️</button></a>
+	  
+	  </div>
+	  <br>
+	  <code>Tags:
+	  </code>
+	  <br>
+	    
+	      <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "practical-disregard" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+	    
+	</section>
+
+
+
+      </div>
+      
+      <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+  </body><footer>
+  <div class="container-fluid bg-dark text-white text-monospace text-center mt-2">
+    <small>Copyright © 2008–2020 Theme: <a class='text-warning' href="https://themes.gohugo.io/monopriv">Monopriv</a> | Crafted with <a class='text-warning' href="https://gohugo.io">Hugo</a></small>
+  </div>
+  
+</footer>
+<div>
+</div>
+</html>

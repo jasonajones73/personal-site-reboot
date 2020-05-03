@@ -1,0 +1,264 @@
+---
+title: "Spatial Exploration - MUSA Masterclass"
+author: "Jason Jones"
+date: 2018-11-18T21:09:00-00:00
+output:
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: inline
+---
+
+
+
+<p>This post was inspired by the <a href="https://github.com/PennMUSA/masterclass2018">MUSA Masterclass</a> provided very graciously by <a href="http://urbanspatialanalysis.com/">Ken Steif</a> and <a href="http://spatial.ly/">James Cheshire</a>. If you aren’t familiar with the program I would strongly encourage you to check it out - <a href="https://www.design.upenn.edu/musa/post/spring-18-recap">UPenn MUSA Program</a>.</p>
+<p>I decided to use open data from the City of Raleigh for my exploration. All data can be found on <a href="http://data-ral.opendata.arcgis.com/">The City of Raleigh’s open data portal</a>. The primary data I am using is contained in the <a href="http://data-ral.opendata.arcgis.com/datasets/raleigh-police-incidents-nibrs">Raleigh Police Incidents (NIBRS)</a> dataset. Each row represents a report made by a police officer.</p>
+<div id="load-required-packages" class="section level2">
+<h2>Load Required Packages</h2>
+<p>Trying to keep it as simple as possible while leveraging some tidyverse tricks I’ve been trying to learn. Forcing myself to use them seems to be a good idea.</p>
+<pre class="r"><code>library(sf)
+library(tidyverse)
+library(RANN2)</code></pre>
+</div>
+<div id="retrieve-data" class="section level2">
+<h2>Retrieve Data</h2>
+<p>Would strongly recommend downloading this data and reading from your computer. Here I am reading the data directly from the GeoJSON API endpoints.</p>
+<pre class="r"><code>raleigh_police &lt;- read_sf(&quot;https://opendata.arcgis.com/datasets/24c0b37fa9bb4e16ba8bcaa7e806c615_0.geojson&quot;)
+
+wake_police_dpts &lt;- read_sf(&quot;https://opendata.arcgis.com/datasets/23094dc3a7b84682898c0a2c27290066_0.geojson&quot;)
+
+raleigh_limits &lt;- read_sf(&quot;https://opendata.arcgis.com/datasets/4303065aa95441308cc7224cf6246782_0.geojson&quot;) %&gt;%
+  filter(LONG_NAME == &quot;RALEIGH&quot;)</code></pre>
+</div>
+<div id="filter-missing-data" class="section level2">
+<h2>Filter Missing Data</h2>
+<p>To prevent some problems down the road, I am filtering out all incidents that are missing spatial attributes.</p>
+<pre class="r"><code>raleigh_police &lt;- raleigh_police %&gt;%
+  filter(is.na(latitude) != TRUE)</code></pre>
+</div>
+<div id="test-plots" class="section level2">
+<h2>Test Plots</h2>
+<p>Just throwing out some quick test plots to make sure everything is working as anticipated.</p>
+<pre class="r"><code>plot(raleigh_police$geometry, col = &quot;grey&quot;)</code></pre>
+<p><img src="/post/2018-11-17-raleigh-police_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<pre class="r"><code>plot(wake_police_dpts$geometry, col = &quot;grey&quot;)</code></pre>
+<p><img src="/post/2018-11-17-raleigh-police_files/figure-html/unnamed-chunk-4-2.png" width="672" /></p>
+</div>
+<div id="check-for-matching-projection" class="section level2">
+<h2>Check for matching projection</h2>
+<p>Checking for matching projections for plotting and k nearest neighbor clustering.</p>
+<pre class="r"><code>st_crs(raleigh_police)</code></pre>
+<pre><code>## Coordinate Reference System:
+##   User input: 4326 
+##   wkt:
+## GEOGCS[&quot;WGS 84&quot;,
+##     DATUM[&quot;WGS_1984&quot;,
+##         SPHEROID[&quot;WGS 84&quot;,6378137,298.257223563,
+##             AUTHORITY[&quot;EPSG&quot;,&quot;7030&quot;]],
+##         AUTHORITY[&quot;EPSG&quot;,&quot;6326&quot;]],
+##     PRIMEM[&quot;Greenwich&quot;,0,
+##         AUTHORITY[&quot;EPSG&quot;,&quot;8901&quot;]],
+##     UNIT[&quot;degree&quot;,0.0174532925199433,
+##         AUTHORITY[&quot;EPSG&quot;,&quot;9122&quot;]],
+##     AUTHORITY[&quot;EPSG&quot;,&quot;4326&quot;]]</code></pre>
+<pre class="r"><code>st_crs(wake_police_dpts)</code></pre>
+<pre><code>## Coordinate Reference System:
+##   User input: 4326 
+##   wkt:
+## GEOGCS[&quot;WGS 84&quot;,
+##     DATUM[&quot;WGS_1984&quot;,
+##         SPHEROID[&quot;WGS 84&quot;,6378137,298.257223563,
+##             AUTHORITY[&quot;EPSG&quot;,&quot;7030&quot;]],
+##         AUTHORITY[&quot;EPSG&quot;,&quot;6326&quot;]],
+##     PRIMEM[&quot;Greenwich&quot;,0,
+##         AUTHORITY[&quot;EPSG&quot;,&quot;8901&quot;]],
+##     UNIT[&quot;degree&quot;,0.0174532925199433,
+##         AUTHORITY[&quot;EPSG&quot;,&quot;9122&quot;]],
+##     AUTHORITY[&quot;EPSG&quot;,&quot;4326&quot;]]</code></pre>
+</div>
+<div id="create-nested-tibble" class="section level2">
+<h2>Create Nested Tibble</h2>
+<p>Here I am nesting the data by crime description so I can apply the clustering function. This creates a column of tibbles for each crime description which will become important as we try to distinguish densities in later steps.</p>
+<pre class="r"><code>raleigh_police_nested &lt;- raleigh_police %&gt;%
+  group_by(crime_description) %&gt;%
+  nest()</code></pre>
+</div>
+<div id="create-clustering-function" class="section level2">
+<h2>Create Clustering Function</h2>
+<p>Next, I wrote a function to apply to my column of tibbles. I am using the <code>nn2</code> function from the <code>RANN2</code> package to perform k nearest neighbor clustering. This function clusters points by law enforcement stations.</p>
+<pre class="r"><code>f &lt;- function(dat) {
+  nn2(st_coordinates(wake_police_dpts), st_coordinates(dat), k =1) %&gt;%
+    data.frame() %&gt;%
+    as_tibble() %&gt;%
+    group_by(nn.idx) %&gt;%
+    summarise(cnt = n()) %&gt;%
+    right_join(wake_police_dpts, by = c(&quot;nn.idx&quot; = &quot;OBJECTID&quot;)) %&gt;%
+    select(-nn.idx) %&gt;%
+    filter(is.na(cnt) != TRUE)
+}</code></pre>
+</div>
+<div id="map-clustering-function-to-tibble" class="section level2">
+<h2>Map Clustering Function to Tibble</h2>
+<p>Next, I leverage the <code>purrr</code> package to map the function to the column of tibbles to create a new column of tibbles containing counts by law enforcement stations.</p>
+<pre class="r"><code>raleigh_police_nested &lt;- raleigh_police_nested %&gt;%
+  mutate(closest = purrr::map(.x = data, .f = ~f(.x)))</code></pre>
+</div>
+<div id="define-crime-description" class="section level2">
+<h2>Define Crime Description</h2>
+<p>Now we are ready to explore the results. The thought here is potentially a <code>shiny</code> application where you could specify a crime description and produce a series of informative plots. I start by defining a new object, <code>crime_des</code>, to filter for only Traffic/DWI Incidents.</p>
+<pre class="r"><code>crime_des &lt;- &quot;Traffic/DWI (Driving While Impaired)&quot;</code></pre>
+</div>
+<div id="extract-nested-tibble" class="section level2">
+<h2>Extract Nested Tibble</h2>
+<p>Here, I am creating two new objects for plotting based on the crime description I just specified.</p>
+<pre class="r"><code>dat &lt;- raleigh_police_nested %&gt;%
+  filter(crime_description == crime_des) %&gt;%
+  .$closest %&gt;%
+  .[[1]] %&gt;%
+  st_as_sf()
+
+# Also creating secondary object for density plots
+dat2 &lt;- raleigh_police %&gt;%
+  filter(crime_description == crime_des) %&gt;%
+  st_coordinates() %&gt;%
+  as_tibble()</code></pre>
+</div>
+<div id="density-plot" class="section level2">
+<h2>Density Plot</h2>
+<p>Now for the fun! First is a density map of Traffic/DWI incidents.</p>
+<pre class="r"><code>dat2 %&gt;%
+  ggplot() +
+  geom_sf(data = raleigh_limits, color = &quot;grey&quot;, fill = NA) +
+  stat_density_2d(aes(X, Y, fill = ..level..), geom = &quot;polygon&quot;, alpha = 0.6) +
+  viridis::scale_fill_viridis(option = &quot;magma&quot;, direction = -1, name = &quot;Density&quot;) +
+  labs(title = sprintf(&quot;Density of %s Incidents in Raleigh, NC&quot;, crime_des),
+       caption = &quot;Author: Jason Jones \nSource: http://data-ral.opendata.arcgis.com/&quot;) +
+  theme(text = element_text(family = &quot;Roboto&quot;),
+        plot.title = element_text(size = 14),
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        axis.line = element_blank())</code></pre>
+<p><img src="/post/2018-11-17-raleigh-police_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+</div>
+<div id="hexbin-plot" class="section level2">
+<h2>Hexbin Plot</h2>
+<p>Next is a Hexbin map of Traffic/DWI Incidents.</p>
+<pre class="r"><code>dat2 %&gt;%
+  ggplot() +
+  geom_sf(data = raleigh_limits, color = &quot;grey&quot;, fill = NA) +
+  geom_hex(aes(X,Y), alpha = 0.6) +
+  viridis::scale_fill_viridis(option = &quot;magma&quot;, direction = -1, name = &quot;Density&quot;) +
+  labs(title = sprintf(&quot;Density of %s Incidents in Raleigh, NC&quot;, crime_des),
+       caption = &quot;Author: Jason Jones \nSource: http://data-ral.opendata.arcgis.com/&quot;) +
+  theme(text = element_text(family = &quot;Roboto&quot;),
+        plot.title = element_text(size = 14),
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        axis.line = element_blank())</code></pre>
+<p><img src="/post/2018-11-17-raleigh-police_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+</div>
+<div id="clustering-by-police-stations" class="section level2">
+<h2>Clustering By Police Stations</h2>
+<p>Finally, is a map of law enforcement stations where the count of clustered incidents is mapped to the size of the point.</p>
+<pre class="r"><code>dat %&gt;%
+  st_coordinates() %&gt;%
+  as_tibble() %&gt;%
+  mutate(cnt = dat$cnt, AGENCY = dat$AGENCY) %&gt;%
+  ggplot() +
+  geom_sf(data = raleigh_limits, color = &quot;grey&quot;, fill = NA) +
+  geom_point(aes(X, Y, size = cnt, color = AGENCY), alpha = 0.8) +
+  scale_color_brewer(palette = &quot;Spectral&quot;, direction = -1, name = &quot;Agency&quot;) +
+  scale_size(name = &quot;Count of Incidents&quot;) +
+  labs(title = sprintf(&quot;Clustering of %s Incidents by LE Stations&quot;, crime_des),
+       caption = &quot;Author: Jason Jones \nSource: http://data-ral.opendata.arcgis.com/&quot;) +
+  theme(text = element_text(family = &quot;Roboto&quot;),
+        plot.title = element_text(size = 14),
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        axis.line = element_blank())</code></pre>
+<p><img src="/post/2018-11-17-raleigh-police_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+<p>Maybe one more time just for fun!</p>
+</div>
+<div id="define-crime-description-again" class="section level2">
+<h2>Define Crime Description Again</h2>
+<pre class="r"><code>crime_des &lt;- &quot;Assault/Simple&quot;</code></pre>
+</div>
+<div id="extract-nested-tibble-again" class="section level2">
+<h2>Extract Nested Tibble Again</h2>
+<pre class="r"><code>dat &lt;- raleigh_police_nested %&gt;%
+  filter(crime_description == crime_des) %&gt;%
+  .$closest %&gt;%
+  .[[1]] %&gt;%
+  st_as_sf()
+
+# Also creating secondary object for density plots
+dat2 &lt;- raleigh_police %&gt;%
+  filter(crime_description == crime_des) %&gt;%
+  st_coordinates() %&gt;%
+  as_tibble()</code></pre>
+</div>
+<div id="density-plot-again" class="section level2">
+<h2>Density Plot Again</h2>
+<pre class="r"><code>dat2 %&gt;%
+  ggplot() +
+  geom_sf(data = raleigh_limits, color = &quot;grey&quot;, fill = NA) +
+  stat_density_2d(aes(X, Y, fill = ..level..), geom = &quot;polygon&quot;, alpha = 0.6) +
+  viridis::scale_fill_viridis(option = &quot;magma&quot;, direction = -1, name = &quot;Density&quot;) +
+  labs(title = sprintf(&quot;Density of %s Incidents in Raleigh, NC&quot;, crime_des),
+       caption = &quot;Author: Jason Jones \nSource: http://data-ral.opendata.arcgis.com/&quot;) +
+  theme(text = element_text(family = &quot;Roboto&quot;),
+        plot.title = element_text(size = 14),
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        axis.line = element_blank())</code></pre>
+<p><img src="/post/2018-11-17-raleigh-police_files/figure-html/unnamed-chunk-16-1.png" width="672" /></p>
+</div>
+<div id="hexbin-plot-again" class="section level2">
+<h2>Hexbin Plot Again</h2>
+<pre class="r"><code>dat2 %&gt;%
+  ggplot() +
+  geom_sf(data = raleigh_limits, color = &quot;grey&quot;, fill = NA) +
+  geom_hex(aes(X,Y), alpha = 0.6) +
+  viridis::scale_fill_viridis(option = &quot;magma&quot;, direction = -1, name = &quot;Density&quot;) +
+  labs(title = sprintf(&quot;Density of %s Incidents in Raleigh, NC&quot;, crime_des),
+       caption = &quot;Author: Jason Jones \nSource: http://data-ral.opendata.arcgis.com/&quot;) +
+  theme(text = element_text(family = &quot;Roboto&quot;),
+        plot.title = element_text(size = 14),
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        axis.line = element_blank())</code></pre>
+<p><img src="/post/2018-11-17-raleigh-police_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
+</div>
+<div id="clustering-by-police-stations-again" class="section level2">
+<h2>Clustering By Police Stations Again</h2>
+<pre class="r"><code>dat %&gt;%
+  st_coordinates() %&gt;%
+  as_tibble() %&gt;%
+  mutate(cnt = dat$cnt, AGENCY = dat$AGENCY) %&gt;%
+  ggplot() +
+  geom_sf(data = raleigh_limits, color = &quot;grey&quot;, fill = NA) +
+  geom_point(aes(X, Y, size = cnt, color = AGENCY), alpha = 0.8) +
+  scale_color_brewer(palette = &quot;Spectral&quot;, direction = -1, name = &quot;Agency&quot;) +
+  scale_size(name = &quot;Count of Incidents&quot;) +
+  labs(title = sprintf(&quot;Clustering of %s Incidents by LE Stations&quot;, crime_des),
+       caption = &quot;Author: Jason Jones \nSource: http://data-ral.opendata.arcgis.com/&quot;) +
+  theme(text = element_text(family = &quot;Roboto&quot;),
+        plot.title = element_text(size = 14),
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        axis.line = element_blank())</code></pre>
+<p><img src="/post/2018-11-17-raleigh-police_files/figure-html/unnamed-chunk-18-1.png" width="672" /></p>
+<p>I really appreciate the class taught by James Cheshire even though this is a little bit of a deviation from clustering to roads. I am thinking something like this could be suited for a <code>shiny</code> application. Not sure if I will ever get around to making that happen.</p>
+</div>

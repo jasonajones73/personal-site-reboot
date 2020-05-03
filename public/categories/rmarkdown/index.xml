@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>rmarkdown on Practical Disregard</title>
+    <link>/categories/rmarkdown/</link>
+    <description>Recent content in rmarkdown on Practical Disregard</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <copyright>Copyright © 2008–2020</copyright>
+    <lastBuildDate>Sat, 02 May 2020 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="/categories/rmarkdown/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>COVID Crime Impacts</title>
+      <link>/post/covid-crime-impacts/</link>
+      <pubDate>Sat, 02 May 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/post/covid-crime-impacts/</guid>
+      <description>Curiosity I’ve been thinking a lot lately about what’s different now. When the lockdown first started, I couldn’t stop thinking about how government, specifically local government, was going to have to come up with solutions to new problems on the fly and try as much as possible to limit negative unintended consequences.</description>
+    </item>
+    
+  </channel>
+</rss>
